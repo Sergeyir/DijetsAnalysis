@@ -17,14 +17,13 @@ CXX_COMMON+= -L$(PREFIX_LIB) -Wl,-rpath,$(PREFIX_LIB) -lpythia8 -ldl
 .SECONDEXPANSION:
 .PHONY: all clean
 
-generate: generate.cc
-ifeq ($(ROOT_USE)${FASTJET3_USE}${LHAPDF6_USE},111)
-	$(CXX) $@.cc -o $@.exe -w $(CXX_COMMON) \
+generate: generate.cpp
+ifeq ($(ROOT_USE)${FASTJET3_USE},11)
+	$(CXX) $@.cpp -o $@.exe -w $(CXX_COMMON) \
 	$(FASTJET3_INCLUDE) $(FASTJET3_LIB) \
-	$(LHAPDF6_INCLUDE) $(LHAPDF6_LIB) \
 	$(ROOT_LIB) `$(ROOT_CONFIG) --cflags --glibs`
 else
-	$(error Error: $@ requires ROOT, FASTJET, and LHAPDF6)
+	$(error Error: $@ requires ROOT and FASTJET)
 endif
 
 # Clean.
