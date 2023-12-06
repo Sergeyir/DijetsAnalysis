@@ -20,7 +20,8 @@ struct
 	const double snn = 7000;
 	const double pt_min = 25;
 	std::string pdf_set = "NNPDF31_lo_as_0118";
-	const double nevents = 1e5;
+	const double nevents = 1e4;
+	const double abs_max_y = 4.7;
 
 	const double fastjet_r_par = 0.5;
 	fastjet::Strategy strategy = fastjet::Best;
@@ -53,6 +54,8 @@ void PrintParameters(const int setup, unsigned long seed)
 	box.AddEntry("Beam energy, TeV", Par.snn/1e3, 3);
 	box.AddEntry("Minimum pT, GeV", Par.pt_min, 3);
 	box.AddEntry("Pdf set", Par.pdf_set);
+
+	box.AddEntry("|ymax|", Par.abs_max_y, 3);
 	
 	if (setup == 1)
 	{
@@ -76,12 +79,15 @@ bool IsNeutrinoOrPhotonId(const int id)
 
 int main(int argc, char *argv[])
 {
-	int setup = atoi(argv[1]);
+	if (argc = 0)
+	{
+		PrintError("Parameters were not passed");
+	}
 	
+	int setup = atoi(argv[1]);
 	if (setup != 0 && setup != 1)
 	{
 		PrintError("Unknown setup: " + to_string(setup));
-		exit(0);
 	}
 	
 	Pythia pythia;
@@ -123,7 +129,9 @@ int main(int argc, char *argv[])
 	//jets multiplicity vs pt
 	TH1D hist_njets = TH1D("jets_multiplicity", "jets", 100, 0, 100);
 	//pair of jets multiplicity vs y
-	TH1D hist_jet_pairs = TH1D("jets_pairs", "jets", 100, -50, 50);
+	TH1D hist_jet_pairs = TH1D("jets_pairs", "jets", 100, 
+		static_cast<double>(ceil(Par.abs_max_y)), 
+		static_cast<double>(-1.*ceil(Par.abs_max_y)));
 
 	//progress bar
 	ProgressBar pbar("FANCY");
@@ -163,11 +171,22 @@ int main(int argc, char *argv[])
 		for (int j = 0; j < fjv.inclusive.size(); j++)
 		{
 			hist_njets.Fill(fjv.inclusive[j].pt(), pythia.info.weight());
+
+			if (abs(fjv.inclusive[j].rap()) > Par.abs_max_y) continue;
 			
 			//loop to form pairs of jets
 			for (int k = j+1; k < fjv.inclusive.size(); k++)
 			{
-				hist_jet_pairs.Fill(fjv.inclusive[j].rap() - fjv.inclusive[k].rap(), pythia.info.weight());
+				if (abs(fjv.inclusive[k].rap()) > Par.abs_max_y) continue;
+
+				const double delta_y = abs(fjv.inclusive[j].rap() - fjv.inclusive[k].rap());
+				const double theta = atan(
+					(fjv.inclusive[j].px + fjv.inclusive[k].px)/
+					(fjv.inclusive[j].px + fjv.inclusive[k].px));
+				
+				const double delta_y_max = -2.*log(2*);
+				
+				hist_jet_pairs.Fill(delta_y, pythia.info.weight());
 			}
 		}
 		
