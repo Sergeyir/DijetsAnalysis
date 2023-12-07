@@ -20,7 +20,7 @@ struct
 	const double snn = 7000;
 	const double pt_min = 25;
 	std::string pdf_set = "NNPDF31_lo_as_0118";
-	const double nevents = 1e4;
+	const double nevents = 1e5;
 	const double abs_max_y = 4.7;
 
 	const double fastjet_r_par = 0.5;
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 	
 	//setting pythia parameters
 	pythia.readString("Beams:eCM = " + to_string(Par.snn));
-	pythia.readString("PhaseSpace::pTHatMin = " + to_string(Par.pt_min));
+	//pythia.readString("PhaseSpace::pTHatMin = " + to_string(Par.pt_min));
 	pythia.readString("PDF:pSet = LHAPDF6:" + Par.pdf_set);
 	pythia.readString("HardQCD:all = on");
 	
@@ -126,6 +126,8 @@ int main(int argc, char *argv[])
 	//printing parameters info
 	PrintParameters(setup, seed);
 
+	//azimuthal angle hist of pair of jets
+	TH1D hist_theta = TH1D("theta", "theta", 64, -1.6, 1.6);
 	//jets multiplicity vs pt
 	TH1D hist_njets = TH1D("jets_multiplicity", "jets", 100, 0, 100);
 	//pair of jets multiplicity vs y
@@ -178,13 +180,13 @@ int main(int argc, char *argv[])
 			for (int k = j+1; k < fjv.inclusive.size(); k++)
 			{
 				if (abs(fjv.inclusive[k].rap()) > Par.abs_max_y) continue;
-
-				const double delta_y = abs(fjv.inclusive[j].rap() - fjv.inclusive[k].rap());
-				const double theta = atan(
-					(fjv.inclusive[j].px + fjv.inclusive[k].px)/
-					(fjv.inclusive[j].px + fjv.inclusive[k].px));
 				
-				const double delta_y_max = -2.*log(2*);
+				const double delta_y = abs(fjv.inclusive[j].rap() - fjv.inclusive[k].rap());
+				
+				const double theta = atan(
+					(fjv.inclusive[j].py() + fjv.inclusive[k].py())/
+					(fjv.inclusive[j].px() + fjv.inclusive[k].px()));
+				hist_theta.Fill(theta, pythia.info.weight());
 				
 				hist_jet_pairs.Fill(delta_y, pythia.info.weight());
 			}
@@ -200,9 +202,11 @@ int main(int argc, char *argv[])
 	TFile output = TFile(output_file_name.c_str(), "RECREATE");
 
 	//normalizing hists by the sum of weighted events
+	hist_theta.Scale(1./sum_weight);
 	hist_njets.Scale(1./sum_weight);
 	hist_jet_pairs.Scale(1./sum_weight);
 
+	hist_theta.Write();
 	hist_njets.Write();
 	hist_jet_pairs.Write();
 
