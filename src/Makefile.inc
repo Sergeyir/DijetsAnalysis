@@ -22,3 +22,9 @@ ROOT_CONFIG=${ROOT}/install/bin/root-config
 ROOT_BIN=${ROOT}/install/bin
 ROOT_INCLUDE=${ROOT}/install/include
 ROOT_LIB=-Wl,-rpath,${ROOT}/install/lib -L${ROOT}/install/lib -lCore
+
+LHAPDF6_USE=1
+LHAPDF6_CONFIG=${LHAPDF}bin/lhapdf-config
+LHAPDF6_BIN=${LHAPDF}/bin
+LHAPDF6_INCLUDE=-I${LHAPDF}/include
+LHAPDF6_LIB=-Wl,-rpath,${LHAPDF}/lib -L${LHAPDF}/lib -lLHAPDF -L${LHAPDF}/../src

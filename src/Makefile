@@ -26,7 +26,17 @@ else
 	$(error Error: $@ requires ROOT and FASTJET)
 endif
 
+analytic: analytic.cpp
+ifeq ($(LHAPDF6_USE),1)
+	$(CXX) $@.cpp -o $@.exe -w $(CXX_COMMON) \
+	$(LHAPDF6_INCLUDE) $(LHAPDF6_LIB) \
+	$(ROOT_LIB) `$(ROOT_CONFIG) --cflags --glibs`
+else
+	$(error Error: $@ requires LHAPDF)
+endif
+
 # Clean.
 clean:
 	rm generate.exe \
+	rm analytic.exe \
 	rm -f *~; rm -f \

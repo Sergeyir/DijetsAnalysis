@@ -17,7 +17,7 @@ using namespace Pythia8;
 
 struct
 {
-	const double snn = 7000;
+	const double energy = 7000;
 	const double pt_min = 25;
 	std::string pdf_set = "NNPDF31_lo_as_0118";
 	const double nevents = 1e5;
@@ -51,7 +51,7 @@ void PrintParameters(const int setup, unsigned long seed)
 {
 	Box box("Parameters");
 	
-	box.AddEntry("Beam energy, TeV", Par.snn/1e3, 3);
+	box.AddEntry("CM beams energy, TeV", Par.energy/1e3, 3);
 	box.AddEntry("Minimum pT, GeV", Par.pt_min, 3);
 	box.AddEntry("Pdf set", Par.pdf_set);
 
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 	unsigned long seed = GetRandomSeed();
 	
 	//setting pythia parameters
-	pythia.readString("Beams:eCM = " + to_string(Par.snn));
+	pythia.readString("Beams:eCM = " + to_string(Par.energy));
 	//pythia.readString("PhaseSpace::pTHatMin = " + to_string(Par.pt_min));
 	pythia.readString("PDF:pSet = LHAPDF6:" + Par.pdf_set);
 	pythia.readString("HardQCD:all = on");
@@ -132,8 +132,7 @@ int main(int argc, char *argv[])
 	TH1D hist_njets = TH1D("jets_multiplicity", "jets", 100, 0, 100);
 	//pair of jets multiplicity vs y
 	TH1D hist_jet_pairs = TH1D("jets_pairs", "jets", 100, 
-		static_cast<double>(ceil(Par.abs_max_y)), 
-		static_cast<double>(-1.*ceil(Par.abs_max_y)));
+		0., static_cast<double>(ceil(Par.abs_max_y*2.)));
 
 	//progress bar
 	ProgressBar pbar("FANCY");
