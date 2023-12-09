@@ -73,13 +73,28 @@ double CS_GG_GG(const double s, const double t, const double u)
 	return 9./(8.*s)*(3. - (t*u)/(s*s) - (s*u)/(t*t) - (s*t)/(u*u));
 }
 
-double GetCSSingle(const double pt)
+double GetPDFInt(const int pid1, const int pid2)
+{	
+	double pdf_int = 0.;
+	for (double x1 = 1e-3; x1 <= 1; x1 += 1e-3)
+	{
+		for (double x2 = 1e-3; x2 <= 1; x2 += 1e-3)
+		{
+			pdf_int += x1*x2*Par.pdf->xfxQ2(pid1, x1, Par.energy*Par.energy)*
+				Par.pdf->xfxQ2(pid1, x2, Par.energy*Par.energy);
+		}
+	}
+	return pdf_int;
+}
+
+double GetD(dsdOmega, )
 {
-	return 1.;
+	const double alpha_s = Par.pdf->alphasQ2(Par.energy*Par.energy);
+	const double dsigmadp2tdy1dy2 = alpha_s*Par.energy/(4.*3.14159265359)*(
+		CS_QQ_QQ(Par.energy, )*GetPDFInt(-5, -5));
 }
 
 int main()
 {
-	std::cout << Par.pdf->xfxQ2(1, 0.3, Par.energy*Par.energy/200.);
 	return 0;
 }
