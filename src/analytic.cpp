@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <cmath>
 
 #include "LHAPDF/LHAPDF.h"
 
@@ -18,11 +19,6 @@ struct
 
 	const int nsteps = 1000;
 } Par;
-
-//variables shortcuts
-double CosTheta(const double pt) {return sqrt(1.-(4.*pt/Par.energy));}
-double T(const double cos_theta) {return Par.energy/2.*(1.-cos_theta);}
-double U(const double cos_theta) {return -1.*Par.energy/2.*(1.+cos_theta);}
 
 //cross sections dsigma/dOmega for different processes
 //qq'->qq'
@@ -73,6 +69,7 @@ double CS_GG_GG(const double s, const double t, const double u)
 	return 9./(8.*s)*(3. - (t*u)/(s*s) - (s*u)/(t*t) - (s*t)/(u*u));
 }
 
+//
 double GetPDFInt(const int pid1, const int pid2)
 {	
 	double pdf_int = 0.;
@@ -87,11 +84,36 @@ double GetPDFInt(const int pid1, const int pid2)
 	return pdf_int;
 }
 
-double GetD(dsdOmega, )
+//variables shortcuts
+double CosTheta(const double pt) {return sqrt(1.-(4.*pt/Par.energy));}
+double T(const double cos_theta) {return Par.energy/2.*(1.-cos_theta);}
+double U(const double cos_theta) {return -1.*Par.energy/2.*(1.+cos_theta);}
+
+double X1(const double pt, const double s, const double y1, const double y2)
+{
+	return 2.*pt/sqrt(s)*exp((y1+y2)/2.)*cosh((y1-y2)/4.);
+}
+
+double X2(const double pt, const double s, const double y1, const double y2)
+{
+	return 2.*pt/sqrt(s)*exp((y1+y2)/2.)*cosh((y1-y2)/4.);
+}
+
+double dsigmadpTdDy(const double dSdOmega, const double s, const double delta_y, double (*CS_XX_XX)(const double, const double, const double)
 {
 	const double alpha_s = Par.pdf->alphasQ2(Par.energy*Par.energy);
-	const double dsigmadp2tdy1dy2 = alpha_s*Par.energy/(4.*3.14159265359)*(
-		CS_QQ_QQ(Par.energy, )*GetPDFInt(-5, -5));
+	const double cos_theta = CosTheta(pt);
+	const double dsigma_domega = CS_XX_XX(s, T(cos_theta), U(cos_theta));
+	
+	for (double y1 = -Par.abs_max_y; y1 <= Par.abs_max_y; y1 += Par.abs_max_y/1000.)
+	{
+		for (double y2 = -Par.abs_max_y; y2 <= Par.abs_max_y; y2 += Par.abs_max_y/1000.)
+		{
+			
+		}
+	}
+
+	return alpha_s*Par.energy/(4.*3.14159265359);
 }
 
 int main()
