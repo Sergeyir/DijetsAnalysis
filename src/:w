@@ -1,0 +1,149 @@
+#include <iostream>
+#include <string>
+#include <cmath>
+
+#include "LHAPDF/LHAPDF.h"
+
+using namespace LHAPDF;
+
+struct
+{
+	const double energy = 7000;
+	std::string pdfset_name = "NNPDF31_lo_as_0118";
+	const PDF *pdf = mkPDF(pdfset_name);
+
+	const double s = energy*energy;
+
+	const double abs_max_y = 4.7;
+
+	const double ptmin = 0;
+	const double ptmax = energy/2.;
+
+	const double nsteps = 1000.;
+} Par;
+
+//cross sections dsigma/dOmega for different processes
+//qq'->qq'
+double CS_QQp_QQp(const double s, const double t, const double u)
+{
+	return 1./(2.*s)*4./9.*(s*s + u*u)/(t*t);
+}
+
+//qq->qq
+double CS_QQ_QQ(const double s, const double t, const double u)
+{
+	return 1./(4.*s)*(4./9.*((s*s + u*u)/(t*t) + (s*s + t*t)/(u*u) - 8./27.*s*s/(u*t)));
+}
+
+//qqbar->q'qbar'
+double CS_QpQbarp_QpQbarp(const double s, const double t, const double u)
+{
+	return 1./(2.*s)*4./9.*(t*t+u*u)/(s*s);
+}
+
+//qqbar->qqbar
+double CS_QQbar_QQbar(const double s, const double t, const double u)
+{
+	return 1./(2.*s)*(4./9.*((s*s+u*u)/(t*t) + (t*t + u*u)/(s*s)) - 8./27.*u*u/(s*t));
+}
+
+//qqbar->gg
+double CS_QQbar_GG(const double s, const double t, const double u)
+{
+	return 1./(4.*s)*(32./27.*(t*t + u*u)/(t*u) - 8./3.*(t*t + u*u)/(s*s));
+}
+
+//gg->qqbar
+double CS_GG_QQbar(const double s, const double t, const double u)
+{
+	return 1./(2.*s)*(1./6.*(t*t + u*u)/(t*u) - 3./8.*(t*t + u*u)/(s*s));
+}
+
+//gq->gq
+double CS_GQ_GQ(const double s, const double t, const double u)
+{
+	return 1./(2.*s)*(-4./9.*(s*s + u*u)/(s*u) + (u*u + s*s)/(t*t));
+}
+
+//gg->gg
+double CS_GG_GG(const double s, const double t, const double u)
+{
+	return 9./(8.*s)*(3. - (t*u)/(s*s) - (s*u)/(t*t) - (s*t)/(u*u));
+}
+
+//returns dsigma/dOmega for pid1+pid2->X+X process
+double CS_XX_XX(const int pid1, const int pid2, const double s, const double t, const double u)
+{
+	if (pid1 == 0 && pid2 == 0)
+	{
+		return CS_GG_GG(s, t, u) + CS_GG_QQbar(s, t, u);
+	}
+	if ((pid1 != 0 && pid2 == 0) || (pid1 == 0 && pid2 != 0))
+	{
+		return CS_GQ_GQ(s, t, u);
+	}
+	if (pid1 == pid2)
+	{
+		return CS_QQ_QQ(s, t, u);
+	}
+	if (pid1 == -pid2)
+	{
+		return CS_QQbar_QQbar(s, t, u) + CS_QQbar_GG(s, t, u);
+	}
+	if ((pid1 > 0 && pid2) < 0 || (pid1 < 0 && pid2 > 0))
+	{
+		return CS_QpQbarp_QpQbarp(s, t, u);
+	}
+	return CS_QQp_QQp(s, t, u);
+}
+
+//variables shortcuts
+double CosTheta(const double pt) {return sqrt(1.-(4.*pt/Par.s));}
+double T(const double pt) {return Par.s/2.*(1.-CosTheta(pt));}
+double U(const double pt) {return -1.*Par.s/2.*(1.+CosTheta(pt));}
+
+double X1(const double pt, const double s, const double y1, const double y2)
+{
+	return 2.*pt/sqrt(s)*exp((y1+y2)/2.)*cosh((y1-y2)/4.);
+}
+
+double X2(const double pt, const double s, const double y1, const double y2)
+{
+	return 2.*pt/sqrt(s)*exp(-(y1+y2)/2.)*cosh((y1-y2)/4.);
+}
+
+//dsigma/dp^2T d Deltay
+double dsigmadpTdDy(const double delta_y, const double pt, const double dsigma_domega)
+{
+	const double alpha_s = Par.pdf->alphasQ2(Par.s);
+	//const double dsigma_domega = CS_XX_XX(s, T(cos_theta), U(cos_theta));
+		
+	double result = 0.;
+	
+	//all flavours sum
+	for (int i = -5; i <= 5; i++)
+	{
+		for (double y1 = -Par.abs_max_y; y1 <= Par.abs_max_y; y1 += Par.abs_max_y/Par.nsteps)
+		{
+			for (double y2 = -Par.abs_max_y; y2 <= Par.abs_max_y; y2 += Par.abs_max_y/Par.nsteps)
+			{
+				//Delta function implementation
+				if (abs(y1 - y2) - delta_y < 2.*Par.abs_max_y/Par.nsteps)
+				{
+					result += 
+						Par.pdf->xfxQ2(pid1, X1(pt, Par.s, y1, y2), Par.s)*
+						Par.pdf->xfxQ2(pid2, X2(pt, Par.s, y1, y2), Par.s)/
+						(Par.nsteps*Par.nsteps);
+				}
+			}
+		}
+	}
+
+	return result*alpha_s*Par.s/(4.*3.14159265359);
+}
+
+int main()
+{
+	std::cout << dsigmadpTdDy(0.5, 10., CS_GG_GG(Par.s, T(10), U(10)) + CS_GG_QQbar(Par.s, T(10), U(10))) << std::endl;
+	return 0;
+}

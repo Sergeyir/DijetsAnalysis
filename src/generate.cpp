@@ -23,7 +23,7 @@ struct
 	const double nevents = 1e5;
 	const double abs_max_y = 4.7;
 
-	const double fastjet_r_par = 0.5;
+	const double fastjet_r_par = 0.4;
 	fastjet::Strategy strategy = fastjet::Best;
 } Par;
 
@@ -182,10 +182,12 @@ int main(int argc, char *argv[])
 				
 				const double delta_y = abs(fjv.inclusive[j].rap() - fjv.inclusive[k].rap());
 				
+				/*
 				const double theta = atan(
 					(fjv.inclusive[j].py() + fjv.inclusive[k].py())/
 					(fjv.inclusive[j].px() + fjv.inclusive[k].px()));
 				hist_theta.Fill(theta, pythia.info.weight());
+				*/
 				
 				hist_jet_pairs.Fill(delta_y, pythia.info.weight());
 			}
