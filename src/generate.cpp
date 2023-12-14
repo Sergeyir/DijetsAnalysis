@@ -25,6 +25,9 @@ struct
 
 	const double fastjet_r_par = 0.4;
 	fastjet::Strategy strategy = fastjet::Best;
+
+	//leptons and gauge bozons id set to exclude from the jet algorithm
+	std::set<int> exclude_id = {12, 13, 14, 15, 16, 17, 18, 22, 23, 24, 37};
 } Par;
 
 struct FastJetVector
@@ -71,15 +74,26 @@ void PrintParameters(const int setup, unsigned long seed)
 	box.Print();
 }
 
-bool IsNeutrinoOrPhotonId(const int id)
+bool IsExcludedPart(int id)
 {
-	if (id == 22 || id == 12 || id == 14 || id == 16 || id == 18) return true;
+	id = abs(id);
+	if (auto search = Par.exclude_id.find(id); search != Par.exclude_id.end()) return true;
 	return false;
+}
+
+void MakeSpectra(TH1D *raw_hist, const double norm)
+{
+	for (int i = 1; i < raw_hist->GetXaxis()->GetNbins(); i++)
+	{
+		raw_hist->SetBinContent(i, raw_hist->GetBinContent(i)/
+			(2.*3.14159265359*raw_hist->GetXaxis()->GetBinCenter(i))*raw_hist->GetXaxis()->GetBinWidth(i));
+	}
+	raw_hist->Scale(1./norm);
 }
 
 int main(int argc, char *argv[])
 {
-	if (argc = 0)
+	if (argc < 2)
 	{
 		PrintError("Parameters were not passed");
 	}
@@ -95,9 +109,9 @@ int main(int argc, char *argv[])
 	
 	//setting pythia parameters
 	pythia.readString("Beams:eCM = " + to_string(Par.energy));
-	//pythia.readString("PhaseSpace::pTHatMin = " + to_string(Par.pt_min));
 	pythia.readString("PDF:pSet = LHAPDF6:" + Par.pdf_set);
 	pythia.readString("HardQCD:all = on");
+	pythia.readString("PhaseSpace::pTHatMin = " + to_string(Par.pt_min));
 	
 	pythia.readString("Random:setSeed = on");
 	pythia.readString("Random:seed = " + to_string(seed));
@@ -126,10 +140,8 @@ int main(int argc, char *argv[])
 	//printing parameters info
 	PrintParameters(setup, seed);
 
-	//azimuthal angle hist of pair of jets
-	TH1D hist_theta = TH1D("theta", "theta", 64, -1.6, 1.6);
 	//jets multiplicity vs pt
-	TH1D hist_njets = TH1D("jets_multiplicity", "jets", 100, 0, 100);
+	TH1D hist_njets = TH1D("jets_multiplicity", "jets", 200, 0., 200.);
 	//pair of jets multiplicity vs y
 	TH1D hist_jet_pairs = TH1D("jets_pairs", "jets", 100, 
 		0., static_cast<double>(ceil(Par.abs_max_y*2.)));
@@ -151,9 +163,9 @@ int main(int argc, char *argv[])
 		for (int j = 0; j < pythia.event.size(); j++)
 		{
 			if (!pythia.event[j].isFinal()) continue;
-
+			
 			//no neutrino or photons
-			if (IsNeutrinoOrPhotonId(pythia.event[j].id())) continue;
+			if (IsExcludedPart(pythia.event[j].id())) continue;
 
 			fjv.input.push_back(fastjet::PseudoJet(
 				pythia.event[j].px(), 
@@ -174,20 +186,16 @@ int main(int argc, char *argv[])
 			hist_njets.Fill(fjv.inclusive[j].pt(), pythia.info.weight());
 
 			if (abs(fjv.inclusive[j].rap()) > Par.abs_max_y) continue;
-			
 			//loop to form pairs of jets
+			
+			if (fjv.inclusive[j].pt() < Par.pt_min) continue;
+			
 			for (int k = j+1; k < fjv.inclusive.size(); k++)
 			{
+				if (fjv.inclusive[k].pt() < Par.pt_min) continue;
 				if (abs(fjv.inclusive[k].rap()) > Par.abs_max_y) continue;
 				
 				const double delta_y = abs(fjv.inclusive[j].rap() - fjv.inclusive[k].rap());
-				
-				/*
-				const double theta = atan(
-					(fjv.inclusive[j].py() + fjv.inclusive[k].py())/
-					(fjv.inclusive[j].px() + fjv.inclusive[k].px()));
-				hist_theta.Fill(theta, pythia.info.weight());
-				*/
 				
 				hist_jet_pairs.Fill(delta_y, pythia.info.weight());
 			}
@@ -202,12 +210,10 @@ int main(int argc, char *argv[])
 	std::string output_file_name = "../output/jets" + to_string(setup) + ".root";
 	TFile output = TFile(output_file_name.c_str(), "RECREATE");
 
-	//normalizing hists by the sum of weighted events
-	hist_theta.Scale(1./sum_weight);
-	hist_njets.Scale(1./sum_weight);
-	hist_jet_pairs.Scale(1./sum_weight);
+	//normalizing hists
+	MakeSpectra(&hist_njets, sum_weight);
+	MakeSpectra(&hist_jet_pairs, sum_weight);
 
-	hist_theta.Write();
 	hist_njets.Write();
 	hist_jet_pairs.Write();
 

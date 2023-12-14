@@ -8,6 +8,7 @@
 #include "LHAPDF/LHAPDF.h"
 
 #include "../lib/ProgressBar.h"
+#include "../lib/Box.h"
 
 using namespace LHAPDF;
 
@@ -103,9 +104,9 @@ double CS_XX_XX(const int pid1, const int pid2, const double s, const double t, 
 }
 
 //variables shortcuts
-double CosTheta(const double pt) {return sqrt(1.-(4.*pt/Par.s));}
-double T(const double cos_theta) {return Par.s/2.*(1.-cos_theta);}
-double U(const double cos_theta) {return -1.*Par.s/2.*(1.+cos_theta);}
+double CosTheta(const double s, const double pt) {return sqrt(1.-(4.*pt*pt/s));}
+double T(const double s, const double cos_theta) {return s/2.*(1.-cos_theta);}
+double U(const double s, const double cos_theta) {return -s/2.*(1.+cos_theta);}
 
 double X1(const double pt, const double sqrt_s, const double y1, const double y2)
 {
@@ -129,27 +130,36 @@ double dsigmadpT(const double pt)
 	{
 		for (int id2 = -5; id2 <= 5; id2++)
 		{
+			double norm = 0.;
+			double current_result = 0.;
 			for (double y1 = -Par.abs_max_y; y1 <= Par.abs_max_y; 
-				y1 += 2.*Par.abs_max_y/(Par.nsteps+1.))
+				y1 += 2.*Par.abs_max_y/Par.nsteps)
 			{
 				for (double y2 = -Par.abs_max_y; y2 <= Par.abs_max_y; 
-					y2 += 2.*Par.abs_max_y/(Par.nsteps+1.))
+					y2 += 2.*Par.abs_max_y/Par.nsteps)
 				{
+					const double ptmax = Par.energy/(2.*cosh(abs(y1-y2)/2.));
+					
+					if (pt > ptmax) continue;
+					
 					double x1 = X1(pt, Par.energy, y1, y2);
 					double x2 = X2(pt, Par.energy, y1, y2);
-
-					double cos_theta = CosTheta(pt);
-					if ((y1 > 0 && y2 < 0) || (y1 < 0 && y2 > 0)) cos_theta *= -1.;
+					const double s = Par.s*x1*x2;
 					
-					result += Par.pdf->xfxQ2(id1, x1, Par.s)*
-						Par.pdf->xfxQ2(id2, x2, Par.s)*
-						CS_XX_XX(id1, id2, Par.s*x1*x2, 
-						T(cos_theta), U(cos_theta));
+					if (x1 > 1. || x2 > 1. || 4.*pt*pt > s) continue;
+					
+					double cos_theta = CosTheta(s, pt);
+					if (y1 - y2 < 0) cos_theta *= -1.;
+					
+					current_result += Par.pdf->xfxQ2(id1, x1, pt*pt)*Par.pdf->xfxQ2(id2, x2, pt*pt)*
+						CS_XX_XX(id1, id2, s, T(s, cos_theta), U(s, cos_theta))/x1/x2/s;
+					norm += 1.;
 				}
 			}
+			result += current_result/norm;
 		}
 	}
-	return result*alpha_s*2.*3.14159265359/(Par.s*pt*Par.nsteps*Par.nsteps);
+	return result*alpha_s*2.*3.14159265359/pt;
 }
 
 //dsigma/dp^2T d Deltay
@@ -164,7 +174,7 @@ double dsigmadp2TdDy(const double delta_y, const double pt)
 	{
 		for (int id2 = -5; id2 <= 5; id2++)
 		{
-			for (double y1 = -Par.abs_max_y; y1 <= Par.abs_max_y; y1 += 2.*Par.abs_max_y/(Par.nsteps+1.))
+			for (double y1 = -Par.abs_max_y; y1 <= Par.abs_max_y; y1 += 2.*Par.abs_max_y/(Par.nsteps))
 			{
 				//delta function requires y2 to be equal to delta_y - y1 or y1 - delta_y
 				double y2 = delta_y - y1;
@@ -174,9 +184,11 @@ double dsigmadp2TdDy(const double delta_y, const double pt)
 				double x1 = X1(pt, Par.energy, y1, y2);
 				double x2 = X2(pt, Par.energy, y1, y2);
 
+				const double s = Par.s*x1*x2;
+
 				result += Par.pdf->xfxQ2(id1, x1, Par.s)*
 					Par.pdf->xfxQ2(id2, x2, Par.s)/(Par.nsteps*2.)*
-					CS_XX_XX(id1, id2, Par.s*x1*x2, T(CosTheta(pt)), U(CosTheta(pt)));
+					CS_XX_XX(id1, id2, s, T(s, CosTheta(s, pt)), U(s, CosTheta(s, pt)));
 				
 				//switching to y2 = delta_y - y2
 				x1 = X1(pt, Par.energy, y1, -y2);
@@ -184,7 +196,7 @@ double dsigmadp2TdDy(const double delta_y, const double pt)
 				
 				result += Par.pdf->xfxQ2(id1, x1, Par.s)*
 					Par.pdf->xfxQ2(id2, x2, Par.s)/(Par.nsteps*2.)*
-					CS_XX_XX(id1, id2, Par.s*x1*x2, T(-CosTheta(pt)), U(-CosTheta(pt)));
+					CS_XX_XX(id1, id2, s, T(s, -CosTheta(s, pt)), U(s, -CosTheta(s, pt)));
 				
 				//denomitaor nsteps for all y1 steps
 				//denominator 2 is for 2 possible values of y2
@@ -196,14 +208,14 @@ double dsigmadp2TdDy(const double delta_y, const double pt)
 
 int main()
 {
-	TH1D hist_njets = TH1D("analytic_jets_multiplicity", "jets", 100, 0, 30);
+	TH1D hist_njets = TH1D("analytic_jets_multiplicity", "jets", 200, 0, 200);
 
 	ProgressBar pbar = ProgressBar("FANCY");
 
-	for (int i = 0; i < hist_njets.GetXaxis()->GetNbins(); i++)
+	for (int i = 1; i <= hist_njets.GetXaxis()->GetNbins(); i++)
 	{
 		pbar.Print(static_cast<double>(i)/static_cast<double>(hist_njets.GetXaxis()->GetNbins()));
-		const double pt = hist_njets.GetXaxis()->GetBinCenter(hist_njets.GetXaxis()->FindBin(i));
+		const double pt = hist_njets.GetXaxis()->GetBinCenter(i);
 		hist_njets.SetBinContent(i, dsigmadpT(pt));
 	}
 
