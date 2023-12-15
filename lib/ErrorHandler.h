@@ -6,10 +6,10 @@
 
 #include "OutputColor.h"
 
-void PrintError(std::string message)
+void PrintError(std::string message, bool do_exit = true)
 {
 	std::cerr << OutputColor::bold_red << "ERROR: " << OutputColor::reset << message << std::endl;
-	exit(1);
+	if (do_exit) exit(1);
 }
 
 void PrintWarning(std::string message)

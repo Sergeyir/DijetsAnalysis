@@ -12,19 +12,23 @@
 
 #include "../lib/Box.h"
 #include "../lib/ProgressBar.h"
+#include "../lib/InputTool.h"
 
 using namespace Pythia8;
 
 struct
 {
-	const double energy = 7000;
-	const double pt_min = 25;
-	std::string pdf_set = "NNPDF31_lo_as_0118";
-	const double nevents = 1e4;
-	const double abs_max_y = 4.7;
+	double energy;
+	double pt_min;
+	std::string pdf_set;
+	double nevents;
+	double abs_max_y;
+	std::string hadronization, isr, fsr;
 
-	const double fastjet_r_par = 0.4;
+	double fastjet_r_par;
 	fastjet::Strategy strategy = fastjet::Best;
+
+	std::string input_file;
 
 	//leptons and gauge bozons id set to exclude from the jet algorithm
 	std::set<int> exclude_id = {12, 14, 16, 18};
@@ -50,7 +54,29 @@ unsigned long GetRandomSeed()
 	return static_cast<unsigned long>(duration.count()) % 900000000;
 }
 
-void PrintParameters(const int setup, unsigned long seed)
+void SetParameters()
+{
+	std::array<std::string, 9> expected_name = {"Energy", "pdf_set", "pT_min", "Events", "abs_max_y", "Hadronization", "ISR", "FSR", "FastJet_R"};
+	std::array<std::string, 9> name;
+	ReadFile("../input/" + Par.input_file + ".cmnd", 
+		name[0], Par.energy,
+		name[1], Par.pdf_set,
+		name[2], Par.pt_min,
+		name[3], Par.nevents,
+		name[4], Par.abs_max_y,
+		name[5], Par.hadronization,
+		name[6], Par.isr,
+		name[7], Par.fsr,
+		name[8], Par.fastjet_r_par);
+
+	for (int i = 0; i < 9; i++)
+	{
+		if (name[i] != expected_name[i]) PrintError("Input file parameter name mismatch: " + 
+			name[0] + " vs " + expected_name[i]);
+	}
+}
+
+void PrintParameters(unsigned long seed)
 {
 	Box box("Parameters");
 	
@@ -60,12 +86,9 @@ void PrintParameters(const int setup, unsigned long seed)
 
 	box.AddEntry("|ymax|", Par.abs_max_y, 3);
 	
-	if (setup == 1)
-	{
-		box.AddEntry("Hadronization", "off");
-		box.AddEntry("Initial state radiation", "off");
-		box.AddEntry("Final state radiation", "off");
-	}
+	box.AddEntry("Hadronization", Par.hadronization);
+	box.AddEntry("Initial state radiation", Par.isr);
+	box.AddEntry("Final state radiation", Par.fsr);
 
 	box.AddEntry("Number of events, 1e3", Par.nevents/1e3);
 	box.AddEntry("Seed", seed);
@@ -81,28 +104,30 @@ bool IsExcludedPart(int id)
 	return false;
 }
 
-void MakeSpectra(TH1D *raw_hist, const double norm)
+void MakeSpectra(TH1D *mult_hist)
 {
-	for (int i = 1; i < raw_hist->GetXaxis()->GetNbins(); i++)
+	for (int i = 1; i < mult_hist->GetXaxis()->GetNbins(); i++)
 	{
-		raw_hist->SetBinContent(i, raw_hist->GetBinContent(i)/
-			(2.*3.14159265359*raw_hist->GetXaxis()->GetBinCenter(i))*raw_hist->GetXaxis()->GetBinWidth(i));
+		const double scale = 2.*3.14159265359*mult_hist->GetXaxis()->GetBinCenter(i)*mult_hist->GetXaxis()->GetBinWidth(i);
+		mult_hist->SetBinContent(i, mult_hist->GetBinContent(i)/scale);
+		mult_hist->SetBinError(i, mult_hist->GetBinError(i)/scale);
 	}
-	raw_hist->Scale(1./norm);
 }
 
 int main(int argc, char *argv[])
 {
 	if (argc < 2)
 	{
-		PrintError("Parameters were not passed");
+		PrintError("Input file name was not passed!", 0);
+		Print("Input files specified in your input directory");
+		system("cd ../input && ls *.cmnd");
+		PrintInfo("Pass the input file name without .cmnd extension");
+		exit(0);
 	}
+	else if (argc > 2) PrintWarning("Only the first argument is passed. Others are allways ignored");
 	
-	int setup = atoi(argv[1]);
-	if (setup != 0 && setup != 1)
-	{
-		PrintError("Unknown setup: " + to_string(setup));
-	}
+	Par.input_file = static_cast<std::string>(argv[1]);
+	SetParameters();
 	
 	Pythia pythia;
 	unsigned long seed = GetRandomSeed();
@@ -118,12 +143,9 @@ int main(int argc, char *argv[])
 
 	pythia.readString("Print:quiet = on");
 
-	if (setup == 1)
-	{
-		pythia.readString("PartonLevel:ISR = off");
-		pythia.readString("PartonLevel:FSR = off");
-		pythia.readString("HadronLevel:Hadronize = off");
-	}
+	pythia.readString("HadronLevel:Hadronize = " + Par.hadronization);
+	pythia.readString("PartonLevel:ISR = " + Par.isr);
+	pythia.readString("PartonLevel:FSR = " + Par.fsr);
 
 	//creating structure of vectors for fastjet
 	FastJetVector fjv;
@@ -138,7 +160,7 @@ int main(int argc, char *argv[])
 	system("mkdir ../output");
 	
 	//printing parameters info
-	PrintParameters(setup, seed);
+	PrintParameters(seed);
 
 	//jets multiplicity vs pt
 	TH1D hist_njets = TH1D("jets_multiplicity", "jets", 200, 0., 200.);
@@ -204,23 +226,26 @@ int main(int argc, char *argv[])
 		//clearing vectors for the next event
 		fjv.Clear();
 	}
+	Print(sum_weight, Par.nevents);
+
+	const double sigma_pb = pythia.info.sigmaGen()*1e9;
 
 	pbar.Print(1);
 
-	std::string output_file_name = "../output/jets" + to_string(setup) + ".root";
+	std::string output_file_name = "../output/jets_" + Par.input_file + ".root";
 	TFile output = TFile(output_file_name.c_str(), "RECREATE");
 	
+	hist_njets.Scale(sigma_pb/sum_weight);
+	hist_jet_pairs.Scale(sigma_pb/sum_weight);
+
 	TH1D *dsigma_dpt = dynamic_cast<TH1D *>(hist_njets.Clone());
 	TH1D *dsigma_ddy = dynamic_cast<TH1D *>(hist_jet_pairs.Clone());
-
-	hist_njets.Scale(1./sum_weight);
-	hist_jet_pairs.Scale(1./sum_weight);
 	
 	dsigma_dpt->SetName("dsigma_dpt");
 	dsigma_ddy->SetName("dsigma_ddy");
 	
-	MakeSpectra(dsigma_dpt, sum_weight);
-	MakeSpectra(dsigma_ddy, sum_weight);
+	MakeSpectra(dsigma_dpt);
+	MakeSpectra(dsigma_ddy);
 	
 	dsigma_dpt->Write();
 	dsigma_ddy->Write();

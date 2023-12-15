@@ -12,6 +12,8 @@
 
 using namespace LHAPDF;
 
+const double pi = 3.14159265359;
+
 struct
 {
 	const double energy = 7000;
@@ -147,8 +149,10 @@ double GetDsigmaDpT(const double pt)
 					double cos_theta = CosTheta(s, pt);
 					if (y1 - y2 < 0) cos_theta *= -1.;
 
-					current_result += Par.pdf->xfxQ2(id1, x1, pt*pt)*Par.pdf->xfxQ2(id2, x2, pt*pt)*
-						CS_XX_XX(id1, id2, s, T(s, cos_theta), U(s, cos_theta))/(x1*x2*s);
+					const double alpha_s = Par.pdf->alphasQ2(pt*pt);
+					current_result += alpha_s*alpha_s*
+						Par.pdf->xfxQ2(id1, x1, pt*pt)*Par.pdf->xfxQ2(id2, x2, pt*pt)*
+						CS_XX_XX(id1, id2, s, T(s, cos_theta), U(s, cos_theta))/(x1*x2);
 					norm += 1.;
 				}
 			}
@@ -156,8 +160,7 @@ double GetDsigmaDpT(const double pt)
 		}
 	}
 	
-	const double alpha_s = Par.pdf->alphasQ2(Par.s);
-	return result*alpha_s*alpha_s*2.*3.14159265359*pt;
+	return result*pt/(2.*pi*Par.s);
 }
 
 //dsigma/d dDeltay
@@ -198,9 +201,11 @@ double GetDsigmaDdy(const double delta_y)
 						double cos_theta = CosTheta(s, pt);
 						if (y1 - y2 < 0) cos_theta *= -1.;
 						
-						current_result += Par.pdf->xfxQ2(id1, x1, pt*pt)*
+						const double alpha_s = Par.pdf->alphasQ2(pt*pt);
+						current_result += alpha_s*alpha_s*
+							Par.pdf->xfxQ2(id1, x1, pt*pt)*
 							Par.pdf->xfxQ2(id2, x2, pt*pt)*
-							CS_XX_XX(id1, id2, s, T(s, cos_theta), U(s, cos_theta))/(x1*x2*s)*pt;
+							CS_XX_XX(id1, id2, s, T(s, cos_theta), U(s, cos_theta))/(x1*x2)*pt;
 						norm += 1.;
 					}
 					
@@ -218,13 +223,12 @@ double GetDsigmaDdy(const double delta_y)
 						double cos_theta = CosTheta(s, pt);
 						if (y1 - y2 < 0) cos_theta *= -1.;
 						
-						current_result += Par.pdf->xfxQ2(id1, x1, pt*pt)*
+						const double alpha_s = Par.pdf->alphasQ2(pt*pt);
+						current_result += alpha_s*alpha_s*
+							Par.pdf->xfxQ2(id1, x1, pt*pt)*
 							Par.pdf->xfxQ2(id2, x2, pt*pt)*
-							CS_XX_XX(id1, id2, s, T(s, cos_theta), U(s, cos_theta))/(x1*x2*s)*pt;
+							CS_XX_XX(id1, id2, s, T(s, cos_theta), U(s, cos_theta))/(x1*x2)*pt;
 						norm += 1.;
-						if (current_result < 0.) Print(current_result, 
-							Par.pdf->xfxQ2(id1, x1, pt*pt), Par.pdf->xfxQ2(id2, x2, pt*pt),
-							CS_XX_XX(id1, id2, s, T(s, cos_theta), U(s, cos_theta)), x1, x2, s, pt);
 					}
 
 				}
@@ -232,8 +236,7 @@ double GetDsigmaDdy(const double delta_y)
 			if (norm > 0.) result += current_result/norm;
 		}
 	}
-	const double alpha_s = Par.pdf->alphasQ2(Par.s);
-	return alpha_s*alpha_s*result*4.*3.14159265359;
+	return result/(4.*pi*Par.s);
 }
 
 int main()
