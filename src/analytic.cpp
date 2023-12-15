@@ -22,10 +22,10 @@ struct
 
 	const double abs_max_y = 4.7;
 
-	const double ptmin = 0;
+	const double ptmin = 25;
 	const double ptmax = energy/2.;
 
-	const double nsteps = 100.;
+	const double nsteps = 10.;
 } Par;
 
 //cross sections dsigma/dOmega for different processes
@@ -38,11 +38,11 @@ double CS_QQp_QQp(const double s, const double t, const double u)
 //qq->qq
 double CS_QQ_QQ(const double s, const double t, const double u)
 {
-	return 1./(4.*s)*(4./9.*((s*s + u*u)/(t*t) + (s*s + t*t)/(u*u) - 8./27.*s*s/(u*t)));
+	return 1./(4.*s)*(4./9.*((s*s + u*u)/(t*t) + (s*s + t*t)/(u*u)) - 8./27.*s*s/(u*t));
 }
 
 //qqbar->q'qbar'
-double CS_QpQbarp_QpQbarp(const double s, const double t, const double u)
+double CS_QQbar_QpQbarp(const double s, const double t, const double u)
 {
 	return 1./(2.*s)*4./9.*(t*t+u*u)/(s*s);
 }
@@ -94,35 +94,29 @@ double CS_XX_XX(const int pid1, const int pid2, const double s, const double t, 
 	}
 	if (pid1 == -pid2)
 	{
-		return CS_QQbar_QQbar(s, t, u) + CS_QQbar_GG(s, t, u);
-	}
-	if ((pid1 > 0 && pid2) < 0 || (pid1 < 0 && pid2 > 0))
-	{
-		return CS_QpQbarp_QpQbarp(s, t, u);
+		return CS_QQbar_QQbar(s, t, u) + CS_QQbar_GG(s, t, u) + CS_QQbar_QpQbarp(s, t, u);
 	}
 	return CS_QQp_QQp(s, t, u);
 }
 
 //variables shortcuts
 double CosTheta(const double s, const double pt) {return sqrt(1.-(4.*pt*pt/s));}
-double T(const double s, const double cos_theta) {return s/2.*(1.-cos_theta);}
+double T(const double s, const double cos_theta) {return -s/2.*(1.-cos_theta);}
 double U(const double s, const double cos_theta) {return -s/2.*(1.+cos_theta);}
 
 double X1(const double pt, const double sqrt_s, const double y1, const double y2)
 {
-	return 2.*pt/sqrt_s*exp((y1+y2)/2.)*cosh((y1-y2)/4.);
+	return 2.*pt/sqrt_s*exp((y1+y2)/2.)*cosh((y1-y2)/2.);
 }
 
 double X2(const double pt, const double sqrt_s, const double y1, const double y2)
 {
-	return 2.*pt/sqrt_s*exp(-(y1+y2)/2.)*cosh((y1-y2)/4.);
+	return 2.*pt/sqrt_s*exp(-(y1+y2)/2.)*cosh((y1-y2)/2.);
 }
 
 //dsigma/dpT
-double dsigmadpT(const double pt)
-{
-	const double alpha_s = Par.pdf->alphasQ2(Par.s);
-		
+double GetDsigmaDpT(const double pt)
+{	
 	double result = 0.;
 	
 	//all flavours loop
@@ -130,8 +124,10 @@ double dsigmadpT(const double pt)
 	{
 		for (int id2 = -5; id2 <= 5; id2++)
 		{
+			//separate normalization for every process cross section
 			double norm = 0.;
 			double current_result = 0.;
+			
 			for (double y1 = -Par.abs_max_y; y1 <= Par.abs_max_y; 
 				y1 += 2.*Par.abs_max_y/Par.nsteps)
 			{
@@ -146,27 +142,27 @@ double dsigmadpT(const double pt)
 					double x2 = X2(pt, Par.energy, y1, y2);
 					const double s = Par.s*x1*x2;
 					
-					if (x1 > 1. || x2 > 1. || 4.*pt*pt > s) continue;
+					if (x1 >= 1. || x2 >= 1. || pt*pt*4. >= s) continue;
 					
 					double cos_theta = CosTheta(s, pt);
 					if (y1 - y2 < 0) cos_theta *= -1.;
-					
+
 					current_result += Par.pdf->xfxQ2(id1, x1, pt*pt)*Par.pdf->xfxQ2(id2, x2, pt*pt)*
-						CS_XX_XX(id1, id2, s, T(s, cos_theta), U(s, cos_theta))/x1/x2/s;
+						CS_XX_XX(id1, id2, s, T(s, cos_theta), U(s, cos_theta))/(x1*x2*s);
 					norm += 1.;
 				}
 			}
-			result += current_result/norm;
+			if (norm > 0.) result += current_result/norm;
 		}
 	}
-	return result*alpha_s*2.*3.14159265359/pt;
+	
+	const double alpha_s = Par.pdf->alphasQ2(Par.s);
+	return result*alpha_s*alpha_s*2.*3.14159265359*pt;
 }
 
-//dsigma/dp^2T d Deltay
-double dsigmadp2TdDy(const double delta_y, const double pt)
-{
-	const double alpha_s = Par.pdf->alphasQ2(Par.s);
-		
+//dsigma/d dDeltay
+double GetDsigmaDdy(const double delta_y)
+{	
 	double result = 0.;
 	
 	//all flavours loop
@@ -174,57 +170,107 @@ double dsigmadp2TdDy(const double delta_y, const double pt)
 	{
 		for (int id2 = -5; id2 <= 5; id2++)
 		{
-			for (double y1 = -Par.abs_max_y; y1 <= Par.abs_max_y; y1 += 2.*Par.abs_max_y/(Par.nsteps))
+			//separate normalization for every process cross section
+			double norm = 0.;
+			double current_result = 0.;
+			
+			const double ptmax = Par.energy/(2.*cosh(delta_y/2.));
+			
+			for (double pt = Par.ptmin; pt <= ptmax; 
+				pt += (ptmax - Par.ptmin)/static_cast<double>(Par.nsteps))
 			{
-				//delta function requires y2 to be equal to delta_y - y1 or y1 - delta_y
-				double y2 = delta_y - y1;
 				
-				if (abs(y2) > Par.abs_max_y) continue;
-				
-				double x1 = X1(pt, Par.energy, y1, y2);
-				double x2 = X2(pt, Par.energy, y1, y2);
+				for (double y1 = -Par.abs_max_y; y1 <= Par.abs_max_y; 
+				y1 += 2.*Par.abs_max_y/Par.nsteps)
+				{
+					double y2;
+					if (y1 > 0) y2 = y1 - delta_y;
+					else y2 = y1 + delta_y;
+					
+					if (abs(y2) > Par.abs_max_y) continue;
+					
+					double x1 = X1(pt, Par.energy, y1, y2);
+					double x2 = X2(pt, Par.energy, y1, y2);
+					
+					if (x1 < 1. && x2 < 1.)
+					{
+						const double s = Par.s*x1*x2;
+						double cos_theta = CosTheta(s, pt);
+						if (y1 - y2 < 0) cos_theta *= -1.;
+						
+						current_result += Par.pdf->xfxQ2(id1, x1, pt*pt)*
+							Par.pdf->xfxQ2(id2, x2, pt*pt)*
+							CS_XX_XX(id1, id2, s, T(s, cos_theta), U(s, cos_theta))/(x1*x2*s)*pt;
+						norm += 1.;
+					}
+					
+					//switching y2 since it can have 2 different values
+					y2 = delta_y + y1;
+					if (abs(y2) > Par.abs_max_y) continue;
+					
+					x1 = X1(pt, Par.energy, y1, y2);
+					x2 = X2(pt, Par.energy, y1, y2);
+					
+					if (x1 < 1. && x2 < 1.)
+					{
+						const double s = Par.s*x1*x2;
+						
+						double cos_theta = CosTheta(s, pt);
+						if (y1 - y2 < 0) cos_theta *= -1.;
+						
+						current_result += Par.pdf->xfxQ2(id1, x1, pt*pt)*
+							Par.pdf->xfxQ2(id2, x2, pt*pt)*
+							CS_XX_XX(id1, id2, s, T(s, cos_theta), U(s, cos_theta))/(x1*x2*s)*pt;
+						norm += 1.;
+						if (current_result < 0.) Print(current_result, 
+							Par.pdf->xfxQ2(id1, x1, pt*pt), Par.pdf->xfxQ2(id2, x2, pt*pt),
+							CS_XX_XX(id1, id2, s, T(s, cos_theta), U(s, cos_theta)), x1, x2, s, pt);
+					}
 
-				const double s = Par.s*x1*x2;
-
-				result += Par.pdf->xfxQ2(id1, x1, Par.s)*
-					Par.pdf->xfxQ2(id2, x2, Par.s)/(Par.nsteps*2.)*
-					CS_XX_XX(id1, id2, s, T(s, CosTheta(s, pt)), U(s, CosTheta(s, pt)));
-				
-				//switching to y2 = delta_y - y2
-				x1 = X1(pt, Par.energy, y1, -y2);
-				x2 = X2(pt, Par.energy, y1, -y2);
-				
-				result += Par.pdf->xfxQ2(id1, x1, Par.s)*
-					Par.pdf->xfxQ2(id2, x2, Par.s)/(Par.nsteps*2.)*
-					CS_XX_XX(id1, id2, s, T(s, -CosTheta(s, pt)), U(s, -CosTheta(s, pt)));
-				
-				//denomitaor nsteps for all y1 steps
-				//denominator 2 is for 2 possible values of y2
+				}
 			}
+			if (norm > 0.) result += current_result/norm;
 		}
 	}
-	return result*alpha_s*4.*3.14159265359/Par.s;
+	const double alpha_s = Par.pdf->alphasQ2(Par.s);
+	return alpha_s*alpha_s*result*4.*3.14159265359;
 }
 
 int main()
 {
-	TH1D hist_njets = TH1D("analytic_jets_multiplicity", "jets", 200, 0, 200);
+	TH1D dsigma_dpt = TH1D("dsigma_dpt", "dsigma/dpT", 200, 0, 200);
+	TH1D dsigma_ddy = TH1D("dsigma_ddy", "dsigma/dDeltay", 100, 0, 
+		static_cast<double>(ceil(Par.abs_max_y*2)));
 
 	ProgressBar pbar = ProgressBar("FANCY");
-
-	for (int i = 1; i <= hist_njets.GetXaxis()->GetNbins(); i++)
+	pbar.SetText("dsigma/dpT");
+	
+	//performing monte-carlo integration for dsigma/dpT and filling the hist with the result
+	for (int i = 1; i <= dsigma_dpt.GetXaxis()->GetNbins(); i++)
 	{
-		pbar.Print(static_cast<double>(i)/static_cast<double>(hist_njets.GetXaxis()->GetNbins()));
-		const double pt = hist_njets.GetXaxis()->GetBinCenter(i);
-		hist_njets.SetBinContent(i, dsigmadpT(pt));
+		pbar.Print(static_cast<double>(i)/static_cast<double>(dsigma_dpt.GetXaxis()->GetNbins()));
+		const double pt = dsigma_dpt.GetXaxis()->GetBinCenter(i);
+		dsigma_dpt.SetBinContent(i, GetDsigmaDpT(pt));
 	}
+	pbar.Print(1);
 
+	pbar.Reset();
+	pbar.SetText("dsigma/ddy");
+
+	//performing monte-carlo integration for dsigma/ddeltay and filling the hist with the result
+	for (int i = 1; i <= dsigma_ddy.GetXaxis()->GetNbins(); i++)
+	{
+		pbar.Print(static_cast<double>(i)/static_cast<double>(dsigma_ddy.GetXaxis()->GetNbins()));
+		const double delta_y = dsigma_ddy.GetXaxis()->GetBinCenter(i);
+		dsigma_ddy.SetBinContent(i, GetDsigmaDdy(delta_y));
+	}
 	pbar.Print(1);
 	
 	system("mkdir ../output");
 	TFile output = TFile("../output/analytic.root", "RECREATE");
 
-	hist_njets.Write();
+	dsigma_dpt.Write();
+	dsigma_ddy.Write();
 
 	output.Close();
 	return 0;

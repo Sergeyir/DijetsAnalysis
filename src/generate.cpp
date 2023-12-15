@@ -20,14 +20,14 @@ struct
 	const double energy = 7000;
 	const double pt_min = 25;
 	std::string pdf_set = "NNPDF31_lo_as_0118";
-	const double nevents = 1e5;
+	const double nevents = 1e4;
 	const double abs_max_y = 4.7;
 
 	const double fastjet_r_par = 0.4;
 	fastjet::Strategy strategy = fastjet::Best;
 
 	//leptons and gauge bozons id set to exclude from the jet algorithm
-	std::set<int> exclude_id = {12, 13, 14, 15, 16, 17, 18, 22, 23, 24, 37};
+	std::set<int> exclude_id = {12, 14, 16, 18};
 } Par;
 
 struct FastJetVector
@@ -183,10 +183,10 @@ int main(int argc, char *argv[])
 		//jets loop
 		for (int j = 0; j < fjv.inclusive.size(); j++)
 		{
-			hist_njets.Fill(fjv.inclusive[j].pt(), pythia.info.weight());
-
 			if (abs(fjv.inclusive[j].rap()) > Par.abs_max_y) continue;
 			//loop to form pairs of jets
+			
+			hist_njets.Fill(fjv.inclusive[j].pt(), pythia.info.weight());
 			
 			if (fjv.inclusive[j].pt() < Par.pt_min) continue;
 			
@@ -209,11 +209,21 @@ int main(int argc, char *argv[])
 
 	std::string output_file_name = "../output/jets" + to_string(setup) + ".root";
 	TFile output = TFile(output_file_name.c_str(), "RECREATE");
+	
+	TH1D *dsigma_dpt = dynamic_cast<TH1D *>(hist_njets.Clone());
+	TH1D *dsigma_ddy = dynamic_cast<TH1D *>(hist_jet_pairs.Clone());
 
-	//normalizing hists
-	MakeSpectra(&hist_njets, sum_weight);
-	MakeSpectra(&hist_jet_pairs, sum_weight);
-
+	hist_njets.Scale(1./sum_weight);
+	hist_jet_pairs.Scale(1./sum_weight);
+	
+	dsigma_dpt->SetName("dsigma_dpt");
+	dsigma_ddy->SetName("dsigma_ddy");
+	
+	MakeSpectra(dsigma_dpt, sum_weight);
+	MakeSpectra(dsigma_ddy, sum_weight);
+	
+	dsigma_dpt->Write();
+	dsigma_ddy->Write();
 	hist_njets.Write();
 	hist_jet_pairs.Write();
 
