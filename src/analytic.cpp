@@ -27,7 +27,7 @@ struct
 	const double ptmin = 25;
 	const double ptmax = energy/2.;
 
-	const double nsteps = 10.;
+	const double nsteps = 100.;
 } Par;
 
 //cross sections dsigma/dOmega for different processes
@@ -188,7 +188,7 @@ double GetDsigmaDdy(const double delta_y)
 	const double ptmax = Par.energy/(2.*cosh(delta_y/2.));
 	
 	for (double pt = Par.ptmin; pt <= ptmax; 
-		pt += 1.)
+		pt += 200.)
 	{
 		
 		for (double y1 = -Par.abs_max_y; y1 <= Par.abs_max_y; 
