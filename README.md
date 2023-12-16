@@ -18,7 +18,7 @@ The summation is performed by the simplest processes ($q$ is for quark, $g$ is f
 - $g+q \rightarrow g + q$
 - $g+g \rightarrow g + g$
 
-You can find $d \sigma_{ij->kl}/d \Omega$ in PDG report (https://pdg.lbl.gov/2023/reviews/contents_sports.html, Eq. 51.4 - 51.12)
+You can find $d \sigma_{ij->kl}/d \Omega$ in [PDG report](https://pdg.lbl.gov/2023/reviews/contents_sports.html, Eq. 51.4 - 51.12)
 
 The final formulas for the cross sections are
 ```math
@@ -45,7 +45,7 @@ git clone https://github.com/Sergeyir/DijetsAnalysis
 
 # Usage
 
-First define paths `$`PYTHIA, `$`FASTJET, `$`ROOT, and `$`LHAPDF in your .bashrc file to the packages directories that they were compiled into. Also check `$`{LHAPDF6}/../src in LHAPDF6_LIB variable in Makefile.inc since the directories can mismatch.
+First define paths `$PYTHIA`, `$FASTJET`, `$ROOT`, and `$LHAPDF` in your .bashrc file to the packages directories that they were compiled into. Also check `${LHAPDF6}/../src` - part of `$LHAPDF6_LIB` variable in Makefile.inc since the directories can mismatch.
 
 There are 2 programs you can run: generate.cpp and analytic.cpp. First calculates the cross sections in pythia8 with fastjet3 algorithm and writes the output file. Second calculates the cross section by implementing monte-carlo integration and also writes the output file. You need to run them first to get the data you then can draw.
 
