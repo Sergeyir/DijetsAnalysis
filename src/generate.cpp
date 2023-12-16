@@ -56,7 +56,18 @@ unsigned long GetRandomSeed()
 
 void SetParameters()
 {
-	std::array<std::string, 9> expected_name = {"Energy", "pdf_set", "pT_min", "Events", "abs_max_y", "Hadronization", "ISR", "FSR", "FastJet_R"};
+	std::array<std::string, 9> expected_name = 
+	{
+		"Energy", 
+		"pdf_set", 
+		"pT_min", 
+		"Events", 
+		"abs_max_y", 
+		"Hadronization", 
+		"ISR", "FSR", 
+		"FastJet_R"
+	};
+	
 	std::array<std::string, 9> name;
 	ReadFile("../input/" + Par.input_file + ".cmnd", 
 		name[0], Par.energy,
@@ -119,8 +130,8 @@ int main(int argc, char *argv[])
 	if (argc < 2)
 	{
 		PrintError("Input file name was not passed!", 0);
-		Print("Input files specified in your input directory");
-		system("cd ../input && ls *.cmnd");
+		Print("Input files specified in your input directory (.cmnd)");
+		system("cd ../input && ls *cmnd | sed 's/\.cmnd$//'");
 		PrintInfo("Pass the input file name without .cmnd extension");
 		exit(0);
 	}
@@ -226,8 +237,7 @@ int main(int argc, char *argv[])
 		//clearing vectors for the next event
 		fjv.Clear();
 	}
-	Print(sum_weight, Par.nevents);
-
+	
 	const double sigma_pb = pythia.info.sigmaGen()*1e9;
 
 	pbar.Print(1);
