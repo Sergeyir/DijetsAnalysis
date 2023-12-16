@@ -23,6 +23,9 @@ You can find $d \sigma_{ij->kl}/d \Omega$ in PDG report (https://pdg.lbl.gov/202
 The final formulas for the cross sections are
 ```math
 \frac{d \sigma}{dp_T} = \int dy1 \int dy2 \frac{d \sigma}{dp^2T dy1 dy2}
+```
+
+```math
 \frac{d \sigma}{d \Delta y} = \int dp_T \int dy1 \int dy2 \frac{d \sigma}{dp^2T dy1 dy2} \delta(\Delta y - |y1 - y2|)
 ```
 
