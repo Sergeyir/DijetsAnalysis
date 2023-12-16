@@ -1,24 +1,24 @@
 # Overview
 
-This is a simple project that helps to study dijets in high-energy p+p collisions. It compares $d \sigma/dp_{T}`$ for single jets and $d \sigma / d \Delta y`$ for dijets for pdf set NNPDF31_lo_as_0118 in pythia8 generation with and without hadronization and radiation + fastjet3 reconstruction algorithm and basic computation. The realisation of comutation and generation is implemented with c++.
+This is a simple project that helps to study dijets in high-energy p+p collisions. It compares $d \sigma/dp_{T}$ for single jets and $d \sigma / d \Delta y$ for dijets for pdf set NNPDF31_lo_as_0118 in pythia8 generation with and without hadronization and radiation + fastjet3 reconstruction algorithm and basic computation. The realisation of comutation and generation is implemented with c++.
 
-Using $d \sigma / dy1 dy2 dp^2_T`$ (https://cds.cern.ch/record/454171/files/p53.pdf, Eq.205) the following formula was obtained
+Using $d \sigma / dy1 dy2 dp^2_T$ (https://cds.cern.ch/record/454171/files/p53.pdf, Eq.205) the following formula was obtained
 
 ```math
 \frac{d \sigma}{dp^2T dy1 dy2} = \frac{8 \pi p_T}{s} \sum_{ijkl} f_{ij}(x_{1}, \mu^2) f_{ij}(x_{2}, \mu^2) \frac{d \sigma_{ij->kl}}{d \Omega}
 ```
 
 The summation is performed by the simplest processes ($q$ is for quark, $g$ is for gluon):
-- $q + q' \rightarrow q + q'`$
-- $q + q \rightarrow q + q`$
-- $q + \bar{q} \rightarrow q + \bar{q}`$
-- $q + \bar{q} \rightarrow q + '\bar{q}'`$
-- $q + \bar{q} \rightarrow g + g`$
-- $g+g \rightarrow q + \bar{q}`$
-- $g+q \rightarrow g + q`$
-- $g+g \rightarrow g + g`$
+- $q + q' \rightarrow q + q'$
+- $q + q \rightarrow q + q$
+- $q + \bar{q} \rightarrow q + \bar{q}$
+- $q + \bar{q} \rightarrow q + '\bar{q}'$
+- $q + \bar{q} \rightarrow g + g$
+- $g+g \rightarrow q + \bar{q}$
+- $g+q \rightarrow g + q$
+- $g+g \rightarrow g + g$
 
-You can find $\frac{d \sigma_{ij->kl}}{d \Omega}`$ in PDG report (https://pdg.lbl.gov/2023/reviews/contents_sports.html, Eq. 51.4 - 51.12)
+You can find $\frac{d \sigma_{ij->kl}}{d \Omega}$ in PDG report (https://pdg.lbl.gov/2023/reviews/contents_sports.html, Eq. 51.4 - 51.12)
 
 The final formulas for the cross sections are
 ```math
@@ -42,7 +42,7 @@ git clone https://github.com/Sergeyir/DijetsAnalysis
 
 # Usage
 
-First define paths `$PYTHIA, `$FASTJET, `$ROOT, and `$LHAPDF in your .bashrc file to the packages directories that they were compiled into. Also check `${LHAPDF6}/../src in LHAPDF6_LIB variable in Makefile.inc since the directories can mismatch.
+First define paths $PYTHIA, $FASTJET, $ROOT, and $LHAPDF in your .bashrc file to the packages directories that they were compiled into. Also check ${LHAPDF6}/../src in LHAPDF6_LIB variable in Makefile.inc since the directories can mismatch.
 
 There are 2 programs you can run: generate.cpp and analytic.cpp. First calculates the cross sections in pythia8 with fastjet3 algorithm and writes the output file. Second calculates the cross section by implementing monte-carlo integration and also writes the output file. You need to run them first to get the data you then can draw.
 
