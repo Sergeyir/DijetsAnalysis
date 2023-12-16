@@ -59,7 +59,7 @@ Then you can launch pythia8+fastjet3 computation by typing
 For setup_name pass a name of a .cmnd file located in input directory without an extension. There are 2 files already presented in the input directory:
 - setup1 - for calculation of cross sections with normal pythia8 setup.
 - setup2 - for calculation of cross sections without hadronization and without initial and final state radiation
-These files also contain important information for generation and contain parameters for energy, pdf set, pTHatMin, number of events to generate, $\Delta y_{max}$, and fastjet r parameter.
+These files also contain important information for generation and contain parameters for energy, pdf set, pTHatMin, number of events to generate, $\Delta y_{max}$, and fastjet R parameter.
 
 And you also can launch the analytic computation of the cross section by typing
 ```sh
