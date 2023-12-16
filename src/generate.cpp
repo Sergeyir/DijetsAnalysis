@@ -19,7 +19,7 @@ using namespace Pythia8;
 struct
 {
 	double energy;
-	double pt_min;
+	double ptmin;
 	std::string pdf_set;
 	double nevents;
 	double abs_max_y;
@@ -72,7 +72,7 @@ void SetParameters()
 	ReadFile("../input/" + Par.input_file + ".cmnd", 
 		name[0], Par.energy,
 		name[1], Par.pdf_set,
-		name[2], Par.pt_min,
+		name[2], Par.ptmin,
 		name[3], Par.nevents,
 		name[4], Par.abs_max_y,
 		name[5], Par.hadronization,
@@ -92,7 +92,7 @@ void PrintParameters(unsigned long seed)
 	Box box("Parameters");
 	
 	box.AddEntry("CM beams energy, TeV", Par.energy/1e3, 3);
-	box.AddEntry("Minimum pT, GeV", Par.pt_min, 3);
+	box.AddEntry("Minimum pT, GeV", Par.ptmin, 3);
 	box.AddEntry("Pdf set", Par.pdf_set);
 
 	box.AddEntry("|ymax|", Par.abs_max_y, 3);
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
 	pythia.readString("Beams:eCM = " + to_string(Par.energy));
 	pythia.readString("PDF:pSet = LHAPDF6:" + Par.pdf_set);
 	pythia.readString("HardQCD:all = on");
-	pythia.readString("PhaseSpace::pTHatMin = " + to_string(Par.pt_min));
+	pythia.readString("PhaseSpace::pTHatMin = " + to_string(Par.ptmin));
 	
 	pythia.readString("Random:setSeed = on");
 	pythia.readString("Random:seed = " + to_string(seed));
@@ -174,10 +174,16 @@ int main(int argc, char *argv[])
 	PrintParameters(seed);
 
 	//jets multiplicity vs pt
-	TH1D hist_njets = TH1D("jets_multiplicity", "jets", 200, 0., 200.);
+	TH1D hist_jet_mult_pt = TH1D("jet_mult_pt", "jets", 200, 0., 200.);
 	//pair of jets multiplicity vs y
-	TH1D hist_jet_pairs = TH1D("jets_pairs", "jets", 100, 
-		0., static_cast<double>(ceil(Par.abs_max_y*2.)));
+	TH1D hist_dijet_mult_dy = TH1D("jet_mult_dy", "jets", 
+		100, 0., static_cast<double>(ceil(Par.abs_max_y*2.)));
+
+	//particles multiplicities
+	//if hadronization, ISR, and FSR turned off this will be parton multiplicities
+	TH1D hist_part_mult_pt = TH1D("part_mult_pt", "part", 200, 0., 200.);
+	TH1D hist_dipart_mult_dy = TH1D("part_mult_dy", "part", 
+		100, 0., static_cast<double>(ceil(Par.abs_max_y*2.)));
 
 	//progress bar
 	ProgressBar pbar("FANCY");
@@ -205,6 +211,20 @@ int main(int argc, char *argv[])
 				pythia.event[j].py(), 
 				pythia.event[j].pz(), 
 				pythia.event[j].e()));
+			
+			if (abs(pythia.event[j].y()) > Par.abs_max_y) continue;
+			
+			hist_part_mult_pt.Fill(pythia.event[j].pT(), pythia.info.weight());
+			
+			if (pythia.event[j].pT() < Par.ptmin) continue;
+			for (int k = j+1; k < pythia.event.size(); k++)
+			{
+				if (pythia.event[k].pT() < Par.ptmin) continue;
+				if (abs(pythia.event[k].y()) > Par.abs_max_y) continue;
+
+				const double delta_y = abs(pythia.event[j].y() - pythia.event[k].y());
+				hist_dipart_mult_dy.Fill(delta_y, pythia.info.weight());
+			}
 		}
 
 		fastjet::ClusterSequence cluster_seq(fjv.input, jet_def);
@@ -219,21 +239,19 @@ int main(int argc, char *argv[])
 			if (abs(fjv.inclusive[j].rap()) > Par.abs_max_y) continue;
 			//loop to form pairs of jets
 			
-			hist_njets.Fill(fjv.inclusive[j].pt(), pythia.info.weight());
+			hist_jet_mult_pt.Fill(fjv.inclusive[j].pt(), pythia.info.weight());
 			
-			if (fjv.inclusive[j].pt() < Par.pt_min) continue;
+			if (fjv.inclusive[j].pt() < Par.ptmin) continue;
 			
 			for (int k = j+1; k < fjv.inclusive.size(); k++)
 			{
-				if (fjv.inclusive[k].pt() < Par.pt_min) continue;
+				if (fjv.inclusive[k].pt() < Par.ptmin) continue;
 				if (abs(fjv.inclusive[k].rap()) > Par.abs_max_y) continue;
 				
 				const double delta_y = abs(fjv.inclusive[j].rap() - fjv.inclusive[k].rap());
-				
-				hist_jet_pairs.Fill(delta_y, pythia.info.weight());
+				hist_dijet_mult_dy.Fill(delta_y, pythia.info.weight());
 			}
 		}
-		
 		//clearing vectors for the next event
 		fjv.Clear();
 	}
@@ -242,14 +260,16 @@ int main(int argc, char *argv[])
 
 	pbar.Print(1);
 
-	std::string output_file_name = "../output/jets_" + Par.input_file + ".root";
+	std::string output_file_name = "../output/gen_" + Par.input_file + ".root";
 	TFile output = TFile(output_file_name.c_str(), "RECREATE");
 	
-	hist_njets.Scale(sigma_pb/sum_weight);
-	hist_jet_pairs.Scale(sigma_pb/sum_weight);
-
-	TH1D *dsigma_dpt = dynamic_cast<TH1D *>(hist_njets.Clone());
-	TH1D *dsigma_ddy = dynamic_cast<TH1D *>(hist_jet_pairs.Clone());
+	hist_jet_mult_pt.Scale(sigma_pb/sum_weight);
+	hist_dijet_mult_dy.Scale(sigma_pb/sum_weight);
+	hist_part_mult_pt.Scale(sigma_pb/sum_weight);
+	hist_dipart_mult_dy.Scale(sigma_pb/sum_weight);
+	
+	TH1D *dsigma_dpt = dynamic_cast<TH1D *>(hist_jet_mult_pt.Clone());
+	TH1D *dsigma_ddy = dynamic_cast<TH1D *>(hist_dijet_mult_dy.Clone());
 	
 	dsigma_dpt->SetName("dsigma_dpt");
 	dsigma_ddy->SetName("dsigma_ddy");
@@ -259,11 +279,15 @@ int main(int argc, char *argv[])
 	
 	dsigma_dpt->Write();
 	dsigma_ddy->Write();
-	hist_njets.Write();
-	hist_jet_pairs.Write();
+	
+	hist_jet_mult_pt.Write();
+	hist_dijet_mult_dy.Write();
 
+	hist_part_mult_pt.Write();
+	hist_dipart_mult_dy.Write();
+	
 	output.Close();
-
+	
 	PrintInfo("File " + output_file_name + " was written");
 	
 	return 0;

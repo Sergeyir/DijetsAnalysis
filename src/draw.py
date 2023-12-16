@@ -1,3 +1,4 @@
+import math
 import ROOT
 from ROOT import TFile, TH1D, TCanvas, TGraph, TLine, TLegend
 import numpy
@@ -7,11 +8,11 @@ ROOT.gStyle.SetOptStat(False)
 ROOT.TH1.AddDirectory(False)
 
 gen_file_name = ["gen_default", "gen_nohr"]
-legend_name = ["pythia8", "#splitline{#splitline{pythia8}{Hadronize off}}{#splitline{ISR off}{FSR off}}"]
-marker_style = [59, 55]
+hist_name_pt = ["jets_multiplicity", "part_mult_pt"]
+legend_name = ["pythia8 LO + fastjet3", 
+        "#splitline{#splitline{pythia8 LO partons}{Hadronize off}}{#splitline{ISR off}{FSR off}}"]
+marker_style = [77, 73]
 color = [ROOT.kRed-2, ROOT.kAzure-3]
-
-pi = 3.14159265359
 
 min_pt = 25.
 max_pt = 200.
@@ -23,7 +24,7 @@ max_ddy = 10.
 min_dsigma_ddy = 1e-5
 max_dsigma_ddy = 1e9
 
-legend = TLegend(0.55, 0.6, 0.85, 0.9)
+legend = TLegend(0.53, 0.5, 0.83, 0.9)
 legend.SetFillColorAlpha(0, 0.)
 legend.SetLineColorAlpha(0, 0.)
 
@@ -49,16 +50,17 @@ analytic_dsigma_dpt.Draw("SAME L")
 for i in range (len(gen_file_name)) :
     input_file = TFile("../output/" + gen_file_name[i] + ".root")
 
-    gen_dsigma_dpt = input_file.Get("jets_multiplicity").Clone(gen_file_name[i] + "_" + "dsigma_dpt")
+    print("Reading histogram named", hist_name_pt[i])
+    gen_dsigma_dpt = input_file.Get(hist_name_pt[i]).Clone(gen_file_name[i] + "_" + "dsigma_dpt")
     gen_dsigma_dpt.SetMarkerStyle(marker_style[i])
-    gen_dsigma_dpt.SetMarkerColorAlpha(color[i], 0.6)
-    gen_dsigma_dpt.SetLineColorAlpha(color[i], 0.6)
-    gen_dsigma_dpt.SetMarkerSize(1.1)
+    gen_dsigma_dpt.SetMarkerColorAlpha(color[i], 0.7)
+    gen_dsigma_dpt.SetLineColorAlpha(color[i], 0.7)
+    gen_dsigma_dpt.SetMarkerSize(2.)
     gen_dsigma_dpt.SetLineWidth(2)
-    gen_dsigma_dpt.Rebin(2)
+    gen_dsigma_dpt.Rebin(5)
     
-    for k in range (gen_dsigma_dpt.GetNbinsX()) :
-        norm = 2.*pi*gen_dsigma_dpt.GetBinCenter(k)*gen_dsigma_dpt.GetBinWidth(k)
+    for k in range (gen_dsigma_dpt.GetNbinsX()+1) :
+        norm = 2.*math.pi*gen_dsigma_dpt.GetBinCenter(k)*gen_dsigma_dpt.GetBinWidth(k)
         gen_dsigma_dpt.SetBinContent(k, gen_dsigma_dpt.GetBinContent(k)/norm)
         gen_dsigma_dpt.SetBinError(k, gen_dsigma_dpt.GetBinError(k)/norm)
 

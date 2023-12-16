@@ -1,7 +1,7 @@
 Energy 7000
 pdf_set NNPDF31_lo_as_0118
 pT_min 25
-Events 1e5
+Events 1e4
 abs_max_y 4.7
 Hadronization off
 ISR off
