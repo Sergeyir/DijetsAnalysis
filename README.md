@@ -32,10 +32,10 @@ The final formulas for the cross sections are
 # Requirements
 
 - GNU GCC wiht C++17 or newer
-- ROOT (https://root.cern/) + compilation with python3
-- LHAPDF6 (https://lhapdf.hepforge.org/) + pdf set NNPDF31_lo_as_0118 installed
-- PYTHIA8 (https://pythia.org/) + compilation with LHAPDF6
-- FASTJET3 (https://fastjet.fr/) 
+- [ROOT](https://root.cern/) + compilation with python3
+- [LHAPDF6](https://lhapdf.hepforge.org/) + pdf set NNPDF31_lo_as_0118 installed
+- [PYTHIA8](https://pythia.org/) + compilation with LHAPDF6
+- [FASTJET3](https://fastjet.fr/) 
 
 # Installation
 
