@@ -10,13 +10,13 @@ canv = TCanvas("a", "a", 900, 1200)
 ROOT.gPad.SetLogy()
 ROOT.gPad.DrawFrame(0., 1e-7, 50., 1e2)
 
-file_name = ["jets0", "jets1"]
+file_name = ["jets_setup1", "jets_setup2"]
 color = [ROOT.kAzure-2, ROOT.kRed-2]
 
 for i in range (len(file_name)) :
     input_file = TFile("../output/" + file_name[i] + ".root")
 
-    hist_njets = input_file.Get("jets_multiplicity")
+    hist_njets = input_file.Get("dsigma_dpt")
     hist_njets.SetMarkerStyle(0)
 
     err_njets_low = TGraph()
@@ -53,7 +53,7 @@ ROOT.gPad.DrawFrame(0., 1e-7, 10., 1e2)
 for i in range (len(file_name)) :
     input_file = TFile("../output/" + file_name[i] + ".root")
 
-    hist_njets = input_file.Get("jets_pairs")
+    hist_njets = input_file.Get("dsigma_ddy")
     hist_njets.SetMarkerStyle(0)
 
     err_njets_low = TGraph()
