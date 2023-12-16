@@ -1,6 +1,6 @@
 # Overview
 
-This is a simple project that helps to study dijets in high-energy p+p collisions. It compares $d \sigma / d p_T`$ for single jets and $d \sigma / d \Delta y`$ for dijets for pdf set NNPDF31_lo_as_0118 in pythia8 generation with and without hadronization and radiation + fastjet3 reconstruction algorithm and basic computation. The realisation of comutation and generation is implemented with c++.
+This is a simple project that helps to study dijets in high-energy p+p collisions. It compares $d \sigma/dp_{T}`$ for single jets and $d \sigma / d \Delta y`$ for dijets for pdf set NNPDF31_lo_as_0118 in pythia8 generation with and without hadronization and radiation + fastjet3 reconstruction algorithm and basic computation. The realisation of comutation and generation is implemented with c++.
 
 Using $d \sigma / dy1 dy2 dp^2_T`$ (https://cds.cern.ch/record/454171/files/p53.pdf, Eq.205) the following formula was obtained
 
@@ -9,14 +9,14 @@ Using $d \sigma / dy1 dy2 dp^2_T`$ (https://cds.cern.ch/record/454171/files/p53.
 ```
 
 The summation is performed by the simplest processes ($q$ is for quark, $g$ is for gluon):
-- $q + q' \leftarrow q + q'`$
-- $q + q \leftarrow q + q`$
-- $q + \bar{q} \leftarrow q + \bar{q}`$
-- $q + \bar{q} \leftarrow q + '\bar{q}'`$
-- $q + \bar{q} \leftarrow g + g`$
-- $g+g \leftarrow q + \bar{q}`$
-- $g+q \leftarrow g + q`$
-- $g+g \leftarrow g + g`$
+- $q + q' \rightarrow q + q'`$
+- $q + q \rightarrow q + q`$
+- $q + \bar{q} \rightarrow q + \bar{q}`$
+- $q + \bar{q} \rightarrow q + '\bar{q}'`$
+- $q + \bar{q} \rightarrow g + g`$
+- $g+g \rightarrow q + \bar{q}`$
+- $g+q \rightarrow g + q`$
+- $g+g \rightarrow g + g`$
 
 You can find $\frac{d \sigma_{ij->kl}}{d \Omega}`$ in PDG report (https://pdg.lbl.gov/2023/reviews/contents_sports.html, Eq. 51.4 - 51.12)
 
