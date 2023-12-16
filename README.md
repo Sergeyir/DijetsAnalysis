@@ -2,10 +2,10 @@
 
 This is a simple project that helps to study dijets in high-energy p+p collisions. It compares $d \sigma/dp_{T}$ for single jets and $d \sigma / d \Delta y$ for dijets for pdf set NNPDF31_lo_as_0118 in pythia8 generation with and without hadronization and radiation + fastjet3 reconstruction algorithm and basic computation. The realisation of comutation and generation is implemented with c++.
 
-Using $d \sigma / dy_1 dy_2 dp^2_T$ (https://cds.cern.ch/record/454171/files/p53.pdf, Eq.205) the following formula was obtained
+Using $d \sigma / dy_{1} dy_{2} dp^2_{T}$ from [Michelangelo L. Mangano "Introduction to QCD"](https://cds.cern.ch/record/454171/files/p53.pdf) (Eq.205) the following formula was obtained
 
 ```math
-\frac{d \sigma}{dp^2T dy_1 dy_2} = \frac{8 \pi p_T}{s} \sum_{ijkl} f_{ij}(x_{1}, \mu^2) f_{ij}(x_{2}, \mu^2) \frac{d \sigma_{ij->kl}}{d \Omega}
+\frac{d \sigma}{dp^2T dy_1 dy_2} = \frac{8 \pi p_T}{s} \sum_{ijkl} f_{ij}(x_{1}, \mu^2) f_{ij}(x_{2}, \mu^2) \frac{d \sigma_{ij \rightarrow kl}}{d \Omega}
 ```
 
 The summation is performed by the simplest processes ($q$ is for quark, $g$ is for gluon):
@@ -18,7 +18,7 @@ The summation is performed by the simplest processes ($q$ is for quark, $g$ is f
 - $g+q \rightarrow g + q$
 - $g+g \rightarrow g + g$
 
-You can find $d \sigma_{ij->kl}/d \Omega$ in [PDG report](https://pdg.lbl.gov/2023/reviews/contents_sports.html, Eq. 51.4 - 51.12)
+You can find $d \sigma_{ij \rightarrow kl}/d \Omega$ in [PDG report](https://pdg.lbl.gov/2023/reviews/contents_sports.html) (Eq. 51.4 - 51.12)
 
 The final formulas for the cross sections are
 ```math
