@@ -5,7 +5,7 @@ This is a simple project that helps to study dijets in high-energy p+p collision
 Using $d \sigma / dy_{1} dy_{2} dp^2_{T}$ from [Michelangelo L. Mangano "Introduction to QCD"](https://cds.cern.ch/record/454171/files/p53.pdf) (Eq.205) the following formula was obtained
 
 ```math
-\frac{d \sigma}{dp^2T dy_1 dy_2} = \frac{8 \pi p_T}{s} \sum_{ijkl} f_{ij}(x_{1}, \mu^2) f_{ij}(x_{2}, \mu^2) \frac{d \sigma_{ij \rightarrow kl}}{d \Omega}
+\frac{d \sigma}{dp_T dy_1 dy_2} = \frac{8 \pi p_T}{s} \sum_{ijkl} f_{ij}(x_{1}, \mu^2) f_{ij}(x_{2}, \mu^2) \frac{d \sigma_{ij \rightarrow kl}}{d \Omega}
 ```
 
 The summation is performed by the simplest processes ($q$ is for quark, $g$ is for gluon):
@@ -22,11 +22,11 @@ You can find $d \sigma_{ij \rightarrow kl}/d \Omega$ in [PDG report](https://pdg
 
 The final formulas for the cross sections are
 ```math
-\frac{d \sigma}{dp_T} = \int dy_1 \int dy_2 \frac{d \sigma}{dp^2T dy_1 dy_2}
+\frac{d \sigma}{dp_T} = \int dy_1 \int dy_2 \frac{d \sigma}{dp_T dy_1 dy_2}
 ```
 
 ```math
-\frac{d \sigma}{d \Delta y} = \int dp_T \int dy_1 \int dy_2 \frac{d \sigma}{dp^2T dy_1 dy_2} \delta(\Delta y - |y_1 - y_2|)
+\frac{d \sigma}{d \Delta y} = \int dp_T \int dy_1 \int dy_2 \frac{d \sigma}{dp_T dy_1 dy_2} \delta(\Delta y - |y_1 - y_2|)
 ```
 
 # Requirements
