@@ -188,7 +188,7 @@ double GetDsigmaDdy(const double delta_y)
 	const double ptmax = Par.energy/(2.*cosh(delta_y/2.));
 	
 	for (double pt = Par.ptmin; pt <= ptmax; 
-		pt += 200.)
+		pt += 1.)
 	{
 		
 		for (double y1 = -Par.abs_max_y; y1 <= Par.abs_max_y; 
