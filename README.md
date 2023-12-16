@@ -5,8 +5,10 @@ This is a simple project that helps to study dijets in high-energy p+p collision
 Using $d \sigma / dy_{1} dy_{2} dp^2_{T}$ from [Michelangelo L. Mangano "Introduction to QCD"](https://cds.cern.ch/record/454171/files/p53.pdf) (Eq.205) the following formula was obtained
 
 ```math
-\frac{d \sigma}{dp_T dy_1 dy_2} = \frac{8 \pi p_T}{s} \sum_{ijkl} f_{ij}(x_{1}, \mu^2) f_{ij}(x_{2}, \mu^2) \frac{d \sigma_{ij \rightarrow kl}}{d \Omega}
+\frac{d \sigma}{dp_T dy_1 dy_2} = \frac{8 \pi p_T}{s} \sum_{ijkl} f_{ij}(x_{1}, \mu_F^2) f_{ij}(x_{2}, \mu_F^2) \frac{d \sigma_{ij \rightarrow kl}}{d \Omega}
 ```
+
+The calculation in this project is implemented on the hard scale i.e. $\mu_F \approx p_T$
 
 The summation is performed by the simplest processes ($q$ is for quark, $g$ is for gluon):
 - $q + q' \rightarrow q + q'$
@@ -60,8 +62,8 @@ Then you can launch pythia8+fastjet3 computation by typing
 ```
 
 For setup_name pass a name of a .cmnd file located in input directory without an extension. There are 2 files already presented in the input directory:
-- setup1 - for calculation of cross sections with normal pythia8 setup.
-- setup2 - for calculation of cross sections without hadronization and without initial and final state radiation
+- default - for calculation of cross sections with normal pythia8 setup.
+- nohr - for calculation of cross sections without hadronization and without initial and final state radiation
 These files also contain important information for generation: energy, pdf set, pTHatMin, number of events to generate, $\Delta y_{max}$, and fastjet R parameter.
 
 And you also can launch the analytic computation of the cross section by typing
