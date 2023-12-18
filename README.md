@@ -51,7 +51,7 @@ First define paths `$PYTHIA`, `$FASTJET`, `$ROOT`, and `$LHAPDF` in your .bashrc
 
 There are 3 programs you can run: simple_generate.cpp, default_generate.cpp and analytic.cpp. First calculates the cross sections in pythia8 with only hard 2->2 parton processes. Second calculates the cross section with fastjet3 algorithm for pythia with default settings apart from pdf set and hard qcd. And the last one calculates the cross section by implementing monte-carlo integration. You need to run them first to get the data you then can draw.
 
-Frist make both programs
+Frist make all programs
 ```sh
 make analytic simple_generate default_generate
 ```
