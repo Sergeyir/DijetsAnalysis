@@ -18,10 +18,10 @@ FASTJET3_INCLUDE=-I${FASTJET}/include
 FASTJET3_LIB=-Wl,-rpath,${FASTJET}/lib -lfastjettools -L${FASTJET}/lib -lfastjet -lm
 
 ROOT_USE=1
-ROOT_CONFIG=${ROOT}/install/bin/root-config
-ROOT_BIN=${ROOT}/install/bin
-ROOT_INCLUDE=${ROOT}/install/include
-ROOT_LIB=-Wl,-rpath,${ROOT}/install/lib -L${ROOT}/install/lib -lCore
+ROOT_CONFIG=${ROOT}/bin/root-config
+ROOT_BIN=${ROOT}/bin
+ROOT_INCLUDE=${ROOT}/include
+ROOT_LIB=-Wl,-rpath,${ROOT}/lib -L${ROOT}/lib -lCore
 
 LHAPDF6_USE=1
 LHAPDF6_CONFIG=${LHAPDF}bin/lhapdf-config

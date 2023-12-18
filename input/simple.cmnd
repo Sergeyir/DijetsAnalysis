@@ -1,0 +1,7 @@
+HardQCD:all = on
+PDF:pSet = LHAPDF6:NNPDF31_lo_as_0118
+ProcessLevel:resonanceDecays = off
+PartonLevel:ISR = off
+PartonLevel:FSR = off
+MultipartonInteractions:processLevel = 1
+HadronLevel:all = off

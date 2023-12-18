@@ -34,7 +34,7 @@ The final formulas for the cross sections are
 # Requirements
 
 - GNU GCC wiht C++17 or newer
-- [ROOT](https://root.cern/) + compilation with python3
+- [ROOT6](https://root.cern/) + compilation with python3
 - [LHAPDF6](https://lhapdf.hepforge.org/) + pdf set NNPDF31_lo_as_0118 installed
 - [PYTHIA8](https://pythia.org/) + compilation with LHAPDF6
 - [FASTJET3](https://fastjet.fr/) 
@@ -49,27 +49,20 @@ git clone https://github.com/Sergeyir/DijetsAnalysis
 
 First define paths `$PYTHIA`, `$FASTJET`, `$ROOT`, and `$LHAPDF` in your .bashrc file to the packages directories that they were compiled into. Also check `${LHAPDF6}/../src` - part of `$LHAPDF6_LIB` variable in Makefile.inc since the directories can mismatch.
 
-There are 2 programs you can run: generate.cpp and analytic.cpp. First calculates the cross sections in pythia8 with fastjet3 algorithm and writes the output file. Second calculates the cross section by implementing monte-carlo integration and also writes the output file. You need to run them first to get the data you then can draw.
+There are 3 programs you can run: simple_generate.cpp, default_generate.cpp and analytic.cpp. First calculates the cross sections in pythia8 with only hard 2->2 parton processes. Second calculates the cross section with fastjet3 algorithm for pythia with default settings apart from pdf set and hard qcd. And the last one calculates the cross section by implementing monte-carlo integration. You need to run them first to get the data you then can draw.
 
 Frist make both programs
 ```sh
-make analytic generate
+make analytic simple_generate default_generate
 ```
 
-Then you can launch pythia8+fastjet3 computation by typing
+To launch any program type while substituting 'name' by the name of the program
+
 ```sh
-./generate.exe setup_name
+./'name'.exe
 ```
 
-For setup_name pass a name of a .cmnd file located in input directory without an extension. There are 2 files already presented in the input directory:
-- default - for calculation of cross sections with normal pythia8 setup.
-- nohr - for calculation of cross sections without hadronization and without initial and final state radiation
-These files also contain important information for generation: energy, pdf set, pTHatMin, number of events to generate, $\Delta y_{max}$, and fastjet R parameter.
-
-And you also can launch the analytic computation of the cross section by typing
-```sh
-./analytic.exe
-```
+All input parameters are located in the top of .cpp files in struct called Par. Also there are input files that pass parameters for pythia generation in input directory.
 
 After generating the data you can draw the result by running
 ```sh

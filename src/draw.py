@@ -8,7 +8,7 @@ ROOT.gStyle.SetOptStat(False)
 ROOT.TH1.AddDirectory(False)
 
 gen_file_name = ["gen_default", "gen_nohr"]
-hist_name_pt = ["jets_multiplicity", "part_mult_pt"]
+hist_name_pt = ["jet_mult_pt", "part_mult_pt"]
 legend_name = ["pythia8 LO + fastjet3", 
         "#splitline{#splitline{pythia8 LO partons}{Hadronize off}}{#splitline{ISR off}{FSR off}}"]
 marker_style = [77, 73]

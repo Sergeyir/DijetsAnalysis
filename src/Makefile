@@ -17,13 +17,21 @@ CXX_COMMON+= -L$(PREFIX_LIB) -Wl,-rpath,$(PREFIX_LIB) -lpythia8 -ldl
 .SECONDEXPANSION:
 .PHONY: all clean
 
-generate: generate.cpp
+default_generate: default_generate.cpp
 ifeq ($(ROOT_USE)${FASTJET3_USE},11)
 	$(CXX) $@.cpp -o $@.exe -w $(CXX_COMMON) \
 	$(FASTJET3_INCLUDE) $(FASTJET3_LIB) \
 	$(ROOT_LIB) `$(ROOT_CONFIG) --cflags --glibs`
 else
 	$(error Error: $@ requires ROOT and FASTJET)
+endif
+
+simple_generate: simple_generate.cpp
+ifeq ($(ROOT_USE),1)
+	$(CXX) $@.cpp -o $@.exe -w $(CXX_COMMON) \
+	$(ROOT_LIB) `$(ROOT_CONFIG) --cflags --glibs`
+else
+	$(error Error: $@ requires ROOT)
 endif
 
 analytic: analytic.cpp
