@@ -17,7 +17,7 @@ struct
 {
 	const double energy = 7000.;
 	const double ptmin = 25.;
-	const double nevents = 1e5;
+	const double nevents = 1e4;
 	const double abs_max_y = 4.7;
 	std::string input_file = "../input/simple.cmnd";
 } Par;
@@ -51,16 +51,6 @@ bool IsParton(int id)
 	return false;
 }
 
-void MakeSpectra(TH1D *mult_hist)
-{
-	for (int i = 1; i < mult_hist->GetXaxis()->GetNbins(); i++)
-	{
-		const double scale = 2.*M_PI*mult_hist->GetXaxis()->GetBinCenter(i)*mult_hist->GetXaxis()->GetBinWidth(i);
-		mult_hist->SetBinContent(i, mult_hist->GetBinContent(i)/scale);
-		mult_hist->SetBinError(i, mult_hist->GetBinError(i)/scale);
-	}
-}
-
 int main()
 {
 	Pythia pythia;
@@ -85,7 +75,7 @@ int main()
 	PrintParameters(seed);
 	
 	//parton multiplicities
-	TH1D hist_mult_pt = TH1D("part_mult_pt", "part", 200, 0., 200.);
+	TH1D hist_dsigma_dpt = TH1D("part_mult_pt", "part", 200, 0., 200.);
 	
 	//parton spectra
 	TH1D hist_dsigma_ddy = TH1D("dsigma_ddy", "dsigma_ddy", 
@@ -109,30 +99,21 @@ int main()
 		{
 			//only outcoming final partons
 			if (!pythia.event[j].isFinal()) continue;
-			if (abs(pythia.event[j].status()) != 62) continue;
-			if (!IsParton(pythia.event[j].id())) continue;
 			if (abs(pythia.event[j].y()) > Par.abs_max_y) continue;
 			
-			hist_mult_pt.Fill(pythia.event[j].pT(), pythia.info.weight());
+			hist_dsigma_dpt.Fill(pythia.event[j].pT(), pythia.info.weight());
 
-			if (pythia.event[j].pT() > Par.ptmin) continue;
+			if (pythia.event[j].pT() < Par.ptmin) continue;
+			if (!IsParton(pythia.event[j].id())) continue;
 			
 			for (int k = j+1; k < pythia.event.size(); k++)
 			{
 				if (!pythia.event[k].isFinal()) continue;
-				if (abs(pythia.event[k].status()) != 62) continue;
-				if (!IsParton(pythia.event[k].id())) continue;
 				if (abs(pythia.event[k].y()) > Par.abs_max_y) continue;
+				if (!IsParton(pythia.event[k].id())) continue;
 
-				//pythia clones particles for the next step that was disabled
-				//checking mothers of the cloned particles to get dijets
-				if (pythia.event[pythia.event[j].mother1()].mother1() != 
-					pythia.event[pythia.event[k].mother1()].mother1() || 
-					pythia.event[pythia.event[j].mother2()].mother1() != 
-					pythia.event[pythia.event[k].mother2()].mother1()) continue;
-				
-				if (pythia.event[k].pT() > Par.ptmin) continue;
-				
+				if (pythia.event[k].pT() < Par.ptmin) continue;
+
 				const double delta_y = abs(pythia.event[j].y() - pythia.event[k].y());
 				hist_dsigma_ddy.Fill(delta_y, pythia.info.weight());
 			}
@@ -145,18 +126,11 @@ int main()
 	std::string output_file_name = "../output/gen_simple.root";
 	TFile output = TFile(output_file_name.c_str(), "RECREATE");
 	
-	hist_mult_pt.Scale(sigma_pb/sum_weight);
-	hist_dsigma_ddy.Scale(sigma_pb/(2.*M_PI*hist_dsigma_ddy.GetXaxis()->GetBinWidth(1)*sum_weight));
+	hist_dsigma_dpt.Scale(sigma_pb/(sum_weight*hist_dsigma_dpt.GetXaxis()->GetBinWidth(1)));
+	hist_dsigma_ddy.Scale(sigma_pb/(sum_weight*pow(hist_dsigma_ddy.GetXaxis()->GetBinWidth(1), 2)));
 	
-	TH1D *hist_dsigma_dpt = dynamic_cast<TH1D *>(hist_mult_pt.Clone());
-	hist_dsigma_dpt->SetName("dsigma_dpt");
-	
-	MakeSpectra(hist_dsigma_dpt);
-	
-	hist_dsigma_dpt->Write();
+	hist_dsigma_dpt.Write();
 	hist_dsigma_ddy.Write();
-	
-	hist_mult_pt.Write();
 	
 	output.Close();
 	PrintInfo("File " + output_file_name + " was written");

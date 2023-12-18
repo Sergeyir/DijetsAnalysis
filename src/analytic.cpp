@@ -42,7 +42,7 @@ double CS_QQp_QQp(const double s, const double t, const double u)
 //qq->qq
 double CS_QQ_QQ(const double s, const double t, const double u)
 {
-	return 1./(9.*s)*(((t*t + s*s)/(u*u) + (s*s + u*u)/(t*t)) - 2.*s*s/(3.*u*t));
+	return 1./(9.*s)*((t*t + s*s)/(u*u) + (s*s + u*u)/(t*t) - 2.*s*s/(3.*u*t));
 }
 
 //qqbar->q'qbar'
@@ -140,7 +140,7 @@ double DsigmaDpTDy1Dy2(const double pt, const double s, const double y1, const d
 		{
 			result += 8.*M_PI*pt*
 				Par.pdf->xfxQ2(id1, x1, pt*pt)*Par.pdf->xfxQ2(id2, x2, pt*pt)*
-				CS_XX_XX(id1, id2, s, pt, y1 - y2)/(s)*1e3;
+				CS_XX_XX(id1, id2, s, pt, y1 - y2)/(s)*1e9;
 			//1e3 is to get pb instead of nb
 		}
 	}
@@ -150,7 +150,6 @@ double DsigmaDpTDy1Dy2(const double pt, const double s, const double y1, const d
 //dsigma/dpT
 double GetDsigmaDpT(const double pt)
 {	
-	
 	double int_y1_result = 0.; //result for the integral over y1
 	int int_y1_norm = 0.; //normalization for integral over y1
 	double int_y1_range = 0.; //integration range for y1

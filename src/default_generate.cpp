@@ -20,7 +20,7 @@ struct
 {
 	const double energy = 7000.;
 	const double ptmin = 25.;
-	const double nevents = 1e5;
+	const double nevents = 1e4;
 	const double abs_max_y = 4.7;
 	
 	const double fastjet_r_par = 0.4;
@@ -71,12 +71,11 @@ bool IsExcludedPart(int id)
 	return false;
 }
 
-
 void MakeSpectra(TH1D *mult_hist)
 {
 	for (int i = 1; i < mult_hist->GetXaxis()->GetNbins(); i++)
 	{
-		const double scale = 2.*M_PI*mult_hist->GetXaxis()->GetBinCenter(i)*mult_hist->GetXaxis()->GetBinWidth(i);
+		const double scale = mult_hist->GetXaxis()->GetBinWidth(i);
 		mult_hist->SetBinContent(i, mult_hist->GetBinContent(i)/scale);
 		mult_hist->SetBinError(i, mult_hist->GetBinError(i)/scale);
 	}
@@ -126,7 +125,6 @@ int main()
 	//events loop
 	for (unsigned long i = 0; i < Par.nevents; i++)
 	{
-		pbar.Print(static_cast<double>(i)/Par.nevents);
 		if (!pythia.next()) continue;
 		
 		sum_weight += pythia.info.weight();
@@ -147,6 +145,7 @@ int main()
 		fastjet::ClusterSequence cluster_seq(fjv.input, jet_def);
 		fjv.inclusive = cluster_seq.inclusive_jets();
 		
+		pbar.Print(static_cast<double>(i)/Par.nevents);
 		
 		//jets loop
 		for (int j = 0; j < fjv.inclusive.size(); j++)
@@ -177,13 +176,14 @@ int main()
 	TFile output = TFile(output_file_name.c_str(), "RECREATE");
 	
 	hist_mult_pt.Scale(sigma_pb/sum_weight);
-	hist_dsigma_ddy.Scale(sigma_pb/(2.*M_PI*hist_dsigma_ddy.GetXaxis()->GetBinWidth(1)*sum_weight));
+	hist_dsigma_ddy.Scale(sigma_pb/sum_weight);
 	
 	TH1D *hist_dsigma_dpt = dynamic_cast<TH1D *>(hist_mult_pt.Clone());
 	
 	hist_dsigma_dpt->SetName("dsigma_dpt");
 	
 	MakeSpectra(hist_dsigma_dpt);
+	MakeSpectra(&hist_dsigma_ddy);
 	
 	hist_mult_pt.Write();
 	hist_dsigma_dpt->Write();
