@@ -21,7 +21,7 @@ struct
 	std::string pdfset_name = "NNPDF31_lo_as_0118";
 	const double abs_max_y = 4.7;
 	const double ptmin = 25;
-	const double nsteps = 10.;
+	const double nsteps = 100.;
 
 	//other parameters
 	const double s = energy*energy;
@@ -29,7 +29,7 @@ struct
 
 	const double y1_step = 2.*abs_max_y/nsteps;
 	const double y2_step = 2.*abs_max_y/nsteps;
-	const double pt_step = 10.;
+	const double pt_step = 1;
 } Par;
 
 //cross sections dsigma/dOmega for different processes
@@ -141,7 +141,7 @@ double DsigmaDpTDy1Dy2(const double pt, const double s, const double y1, const d
 			result += 8.*M_PI*pt*
 				Par.pdf->xfxQ2(id1, x1, pt*pt)*Par.pdf->xfxQ2(id2, x2, pt*pt)*
 				CS_XX_XX(id1, id2, s, pt, y1 - y2)/(s)*1e9;
-			//1e3 is to get pb instead of nb
+			//1e9 is to get pb instead of mb
 		}
 	}
 	return result;
@@ -150,16 +150,12 @@ double DsigmaDpTDy1Dy2(const double pt, const double s, const double y1, const d
 //dsigma/dpT
 double GetDsigmaDpT(const double pt)
 {	
-	double int_y1_result = 0.; //result for the integral over y1
-	int int_y1_norm = 0.; //normalization for integral over y1
-	double int_y1_range = 0.; //integration range for y1
+	double int_result = 0.; //result for the integral
+	double abs_max_y = 0.; //integration range for y1 and y2
+	double abs_min_y = 0.; //integration range for y1 and y2
 	
 	for (double y1 = -Par.abs_max_y; y1 <= Par.abs_max_y; y1 += Par.y1_step)
 	{
-		double int_y2_result = 0.;
-		int int_y2_norm = 0.;
-		double int_y2_range = 0.;
-		
 		for (double y2 = -Par.abs_max_y; y2 <= Par.abs_max_y; y2 += Par.y2_step)
 		{
 			const double ptmax = Par.energy/(2.*cosh(abs(y1-y2)/2.));
@@ -172,42 +168,28 @@ double GetDsigmaDpT(const double pt)
 			
 			if (x1 >= 1. || x2 >= 1. || pt*pt*4. >= s) continue;
 			
-			int_y2_result += DsigmaDpTDy1Dy2(pt, s, y1, y2, x1, x2);
-			int_y2_norm += 1;
-			int_y2_range += Par.y2_step;
-		}
-		if (int_y2_norm > 0) 
-		{
-			int_y1_result += int_y2_range*int_y2_result/static_cast<double>(int_y2_norm);
-			int_y1_norm += 1;
-			int_y1_range += Par.y1_step;
+			int_result += DsigmaDpTDy1Dy2(pt, s, y1, y2, x1, x2);
+			abs_min_y = Minimum(abs_min_y, abs(y1), abs(y2));
+			abs_max_y = Maximum(abs_max_y, abs(y1), abs(y2));
 		}
 	}
-	return int_y1_range*int_y1_result/static_cast<double>(int_y1_norm);
+	return int_result*2.*Par.abs_max_y*Par.abs_max_y/(Par.nsteps*Par.nsteps);
 }
 
 //dsigma/d dDeltay
 double GetDsigmaDdy(const double delta_y)
 {	
-	//result and normalization for the integral over pt
-	double int_pt_result = 0.;
-	int int_pt_norm = 0.;
-	double int_pt_range = 0.;
-	
 	const double ptmax = Par.energy/(2.*cosh(delta_y/2.));
+	double int_result = 0.;
 
+	double abs_y_range = 0.;
+	double current_ptmin = ptmax;
+	double current_ptmax = Par.ptmin;
+	
 	for (double pt = Par.ptmin; pt <= ptmax; pt += Par.pt_step)
 	{
-		double int_y1_result = 0.;
-		int int_y1_norm = 0.;
-		double int_y1_range = 0.;
-		
 		for (double y1 = -Par.abs_max_y; y1 <= Par.abs_max_y; y1 += Par.y1_step)
 		{
-			double int_y2_result = 0.;
-			int int_y2_norm = 0.;
-			double int_y2_range = 0.;
-
 			double y2 = y1 - delta_y;
 			if (abs(y2) <= Par.abs_max_y) 
 			{
@@ -216,9 +198,11 @@ double GetDsigmaDdy(const double delta_y)
 					
 				if (x1 < 1. && x2 < 1.)
 				{
-					int_y2_result += DsigmaDpTDy1Dy2(pt, Par.s*x1*x2, y1, y2, x1, x2);
-					int_y2_norm += 1;
-					int_y2_range += Par.y2_step;
+					int_result += DsigmaDpTDy1Dy2(pt, Par.s*x1*x2, y1, y2, x1, x2);
+					abs_y_range = Maximum(abs(y1), abs(y2), abs_y_range);
+
+					current_ptmin = Minimum(current_ptmin, pt);
+					current_ptmax = Maximum(current_ptmax, pt);
 				}
 			}
 			
@@ -231,28 +215,17 @@ double GetDsigmaDdy(const double delta_y)
 				
 				if (x1 < 1. && x2 < 1.)
 				{
-					int_y2_result += DsigmaDpTDy1Dy2(pt, Par.s*x1*x2, y1, y2, x1, x2);
-					int_y2_norm += 1;
-					int_y2_range += Par.y2_step;
+					int_result += DsigmaDpTDy1Dy2(pt, Par.s*x1*x2, y1, y2, x1, x2);
+					abs_y_range = Maximum(abs(y1), abs(y2), abs_y_range);
+
+					current_ptmin = Minimum(current_ptmin, pt);
+					current_ptmax = Maximum(current_ptmax, pt);
 				}
 			}
-
-			if (int_y2_norm > 0)
-			{
-				int_y1_result += int_y2_range*int_y2_result/static_cast<double>(int_y2_norm);
-				int_y1_norm += 1.;
-				int_y1_range += Par.y1_step;
-			}
-		}
-		if (int_y1_norm > 0) 
-		{
-			int_pt_result += int_y1_range*int_y1_result/static_cast<double>(int_y1_norm);
-			int_pt_norm += 1;
-			int_pt_range += Par.pt_step;
 		}
 	}
-	if (int_pt_norm > 0) int_pt_result *= int_pt_range/static_cast<double>(int_pt_norm);
-	return int_pt_result;
+	int_result *= 4.*abs_y_range*abs_y_range*(current_ptmax - current_ptmin)/(4.*Par.nsteps*(ptmax - Par.ptmin)/Par.pt_step);
+	return int_result;
 }
 
 int main()

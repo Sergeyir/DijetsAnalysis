@@ -17,7 +17,7 @@ struct
 {
 	const double energy = 7000.;
 	const double ptmin = 25.;
-	const double nevents = 1e4;
+	const double nevents = 1e5;
 	const double abs_max_y = 4.7;
 	std::string input_file = "../input/simple.cmnd";
 } Par;

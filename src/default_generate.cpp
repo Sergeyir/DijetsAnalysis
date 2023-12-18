@@ -20,7 +20,7 @@ struct
 {
 	const double energy = 7000.;
 	const double ptmin = 25.;
-	const double nevents = 1e4;
+	const double nevents = 1e5;
 	const double abs_max_y = 4.7;
 	
 	const double fastjet_r_par = 0.4;
@@ -71,16 +71,6 @@ bool IsExcludedPart(int id)
 	return false;
 }
 
-void MakeSpectra(TH1D *mult_hist)
-{
-	for (int i = 1; i < mult_hist->GetXaxis()->GetNbins(); i++)
-	{
-		const double scale = mult_hist->GetXaxis()->GetBinWidth(i);
-		mult_hist->SetBinContent(i, mult_hist->GetBinContent(i)/scale);
-		mult_hist->SetBinError(i, mult_hist->GetBinError(i)/scale);
-	}
-}
-
 int main()
 {
 	Pythia pythia;
@@ -111,7 +101,7 @@ int main()
 	PrintParameters(seed);
 
 	//jets multiplicity vs pt
-	TH1D hist_mult_pt = TH1D("jet_mult_pt", "jets", 200, 0., 200.);
+	TH1D hist_dsigma_dpt = TH1D("jet_mult_pt", "jets", 200, 0., 200.);
 	//pair of jets multiplicity vs y
 	TH1D hist_dsigma_ddy = TH1D("dsigma_ddy", "jets", 
 		100, 0., static_cast<double>(ceil(Par.abs_max_y*2.)));
@@ -151,7 +141,7 @@ int main()
 		for (int j = 0; j < fjv.inclusive.size(); j++)
 		{
 			if (abs(fjv.inclusive[j].rap()) > Par.abs_max_y) continue;
-			hist_mult_pt.Fill(fjv.inclusive[j].pt(), pythia.info.weight());
+			hist_dsigma_dpt.Fill(fjv.inclusive[j].pt(), pythia.info.weight());
 			
 			if (fjv.inclusive[j].pt() < Par.ptmin) continue;
 			
@@ -175,18 +165,10 @@ int main()
 	std::string output_file_name = "../output/gen_default.root";
 	TFile output = TFile(output_file_name.c_str(), "RECREATE");
 	
-	hist_mult_pt.Scale(sigma_pb/sum_weight);
-	hist_dsigma_ddy.Scale(sigma_pb/sum_weight);
+	hist_dsigma_dpt.Scale(sigma_pb/(sum_weight*hist_dsigma_dpt.GetXaxis()->GetBinWidth(1)));
+	hist_dsigma_ddy.Scale(sigma_pb/(sum_weight*pow(hist_dsigma_ddy.GetXaxis()->GetBinWidth(1), 2)));
 	
-	TH1D *hist_dsigma_dpt = dynamic_cast<TH1D *>(hist_mult_pt.Clone());
-	
-	hist_dsigma_dpt->SetName("dsigma_dpt");
-	
-	MakeSpectra(hist_dsigma_dpt);
-	MakeSpectra(&hist_dsigma_ddy);
-	
-	hist_mult_pt.Write();
-	hist_dsigma_dpt->Write();
+	hist_dsigma_dpt.Write();
 	hist_dsigma_ddy.Write();
 
 	output.Close();
