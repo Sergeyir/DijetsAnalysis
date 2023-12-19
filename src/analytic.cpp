@@ -231,7 +231,7 @@ double GetDsigmaDdy(const double delta_y)
 int main()
 {
 	TH1D dsigma_dpt = TH1D("dsigma_dpt", "dsigma/dpT", 200, 0, 200);
-	TH1D dsigma_ddy = TH1D("dsigma_ddy", "dsigma/dDeltay", 100, 0, 
+	TH1D dsigma_ddy = TH1D("dsigma_ddy", "dsigma/dDeltay", 120, 0, 
 		static_cast<double>(ceil(Par.abs_max_y*2)));
 
 	ProgressBar pbar = ProgressBar("FANCY");

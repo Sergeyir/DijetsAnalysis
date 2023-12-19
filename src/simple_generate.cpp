@@ -79,7 +79,7 @@ int main()
 	
 	//parton spectra
 	TH1D hist_dsigma_ddy = TH1D("dsigma_ddy", "dsigma/ddy", 
-		100, 0., static_cast<double>(ceil(Par.abs_max_y*2.)));
+		40, 0., static_cast<double>(ceil(Par.abs_max_y*2.)));
 
 	//progress bar
 	ProgressBar pbar("FANCY");
@@ -127,7 +127,7 @@ int main()
 	TFile output = TFile(output_file_name.c_str(), "RECREATE");
 	
 	hist_dsigma_dpt.Scale(sigma_pb/(sum_weight*hist_dsigma_dpt.GetXaxis()->GetBinWidth(1)));
-	hist_dsigma_ddy.Scale(sigma_pb/(sum_weight*pow(hist_dsigma_ddy.GetXaxis()->GetBinWidth(1), 2)));
+	hist_dsigma_ddy.Scale(sigma_pb*pow(M_PI, 2)/(sum_weight*hist_dsigma_ddy.GetXaxis()->GetBinWidth(1)));
 	
 	hist_dsigma_dpt.Write();
 	hist_dsigma_ddy.Write();
