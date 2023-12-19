@@ -101,9 +101,9 @@ int main()
 	PrintParameters(seed);
 
 	//jets multiplicity vs pt
-	TH1D hist_dsigma_dpt = TH1D("jet_mult_pt", "jets", 200, 0., 200.);
+	TH1D hist_dsigma_dpt = TH1D("dsigma_dpt", "dsigma/dpt", 40, 0., 200.);
 	//pair of jets multiplicity vs y
-	TH1D hist_dsigma_ddy = TH1D("dsigma_ddy", "jets", 
+	TH1D hist_dsigma_ddy = TH1D("dsigma_ddy", "dsigma/ddy", 
 		100, 0., static_cast<double>(ceil(Par.abs_max_y*2.)));
 	
 	//progress bar

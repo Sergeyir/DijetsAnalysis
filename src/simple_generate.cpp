@@ -75,10 +75,10 @@ int main()
 	PrintParameters(seed);
 	
 	//parton multiplicities
-	TH1D hist_dsigma_dpt = TH1D("part_mult_pt", "part", 200, 0., 200.);
+	TH1D hist_dsigma_dpt = TH1D("dsigma_dpt", "dsigma/dpt", 40, 0., 200.);
 	
 	//parton spectra
-	TH1D hist_dsigma_ddy = TH1D("dsigma_ddy", "dsigma_ddy", 
+	TH1D hist_dsigma_ddy = TH1D("dsigma_ddy", "dsigma/ddy", 
 		100, 0., static_cast<double>(ceil(Par.abs_max_y*2.)));
 
 	//progress bar
