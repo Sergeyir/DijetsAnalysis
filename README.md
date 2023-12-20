@@ -53,7 +53,7 @@ First define paths `$PYTHIA`, `$FASTJET`, `$ROOT`, and `$LHAPDF` in your .bashrc
 
 There are 2 programs you can run: generate.cpp and analytic.cpp. First calculates the cross sections in pythia8 for partons and for jets. An the second one calculates the cross sections analyticaly by implementing monte-carlo integration. You need to run them first to get the data that you then can draw.
 
-Frist make all programs
+First make all programs
 ```sh
 make analytic generate
 ```
