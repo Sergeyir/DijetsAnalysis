@@ -5,7 +5,7 @@ PREFIX_LIB=${PYTHIA}/lib
 PREFIX_SHARE=${PYTHIA}/share/Pythia8
 
 CXX=g++
-CXX_COMMON=-Wpedantic -W -Wall -Werror
+CXX_COMMON=-Wpedantic -W -Wall -Werror -O2
 CXX_SHARED=-shared
 CXX_SONAME=-Wl,-soname,
 LIB_SUFFIX=.so

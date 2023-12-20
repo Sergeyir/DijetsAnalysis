@@ -4,6 +4,7 @@
 
 #include "TFile.h"
 #include "TH1.h"
+#include "TRandom.h"
 
 #include "LHAPDF/LHAPDF.h"
 
@@ -21,16 +22,22 @@ struct
 	std::string pdfset_name = "NNPDF31_lo_as_0118";
 	const double abs_max_y = 4.7;
 	const double ptmin = 25;
-	const double nsteps = 100.;
+	const double ntries = 1e5;
 
 	//other parameters
 	const double s = energy*energy;
 	const PDF *pdf = mkPDF(pdfset_name);
-
-	const double y1_step = 2.*abs_max_y/nsteps;
-	const double y2_step = 2.*abs_max_y/nsteps;
-	const double pt_step = 1;
+	TRandom rand;
 } Par;
+
+unsigned int GetRandomSeed()
+{
+	auto now = std::chrono::high_resolution_clock::now();
+	auto now_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(now);
+	auto epoch = now_ms.time_since_epoch();
+	auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(epoch);
+	return static_cast<unsigned int>(duration.count() % 900000000);
+}
 
 //cross sections dsigma/dOmega for different processes
 //qq'->qq'
@@ -150,90 +157,87 @@ double DsigmaDpTDy1Dy2(const double pt, const double s, const double y1, const d
 //dsigma/dpT
 double GetDsigmaDpT(const double pt)
 {	
-	double int_result = 0.; //result for the integral
-	double abs_max_y = 0.; //integration range for y1 and y2
-	double abs_min_y = 0.; //integration range for y1 and y2
+	double result = 0.;
+	double n = 0.;
 	
-	for (double y1 = -Par.abs_max_y; y1 <= Par.abs_max_y; y1 += Par.y1_step)
+	for (double i = 0; i < Par.ntries; i++)
 	{
-		for (double y2 = -Par.abs_max_y; y2 <= Par.abs_max_y; y2 += Par.y2_step)
-		{
-			const double ptmax = Par.energy/(2.*cosh(abs(y1-y2)/2.));
-			
-			if (pt > ptmax) continue;
-			
-			double x1 = X1(pt, Par.energy, y1, y2);
-			double x2 = X2(pt, Par.energy, y1, y2);
-			const double s = Par.s*x1*x2;
-			
-			if (x1 >= 1. || x2 >= 1. || pt*pt*4. >= s) continue;
-			
-			int_result += DsigmaDpTDy1Dy2(pt, s, y1, y2, x1, x2);
-			abs_min_y = Minimum(abs_min_y, abs(y1), abs(y2));
-			abs_max_y = Maximum(abs_max_y, abs(y1), abs(y2));
-		}
+		(void)i;
+		
+		const double y1 = Par.rand.Uniform(0., Par.abs_max_y);
+		const double y2 = Par.rand.Uniform(-Par.abs_max_y, Par.abs_max_y);
+		
+		//checking if the pt is within the kinematicaly possible range
+		if (pt > Par.energy/(2.*cosh(abs(y1-y2)/2.))) continue;
+		
+		double x1 = X1(pt, Par.energy, y1, y2);
+		double x2 = X2(pt, Par.energy, y1, y2);
+		const double s = Par.s*x1*x2;
+		
+		//checking if x1 and x2 are within the kinematicaly possible range
+		if (x1 >= 1. || x2 >= 1.) continue;
+		
+		result += DsigmaDpTDy1Dy2(pt, s, y1, y2, x1, x2);
+		n+= 1.;
 	}
-	return int_result*2.*Par.abs_max_y*Par.abs_max_y/(Par.nsteps*Par.nsteps);
+	return result*2.*Par.abs_max_y*Par.abs_max_y/n;
 }
 
 //dsigma/d dDeltay
 double GetDsigmaDdy(const double delta_y)
 {	
+	double result = 0.;
+	double n = 0.;
+
 	const double ptmax = Par.energy/(2.*cosh(delta_y/2.));
-	double int_result = 0.;
+	if (ptmax <= Par.ptmin) return 0.;
 
-	double abs_y_range = 0.;
-	double current_ptmin = ptmax;
-	double current_ptmax = Par.ptmin;
-	
-	for (double pt = Par.ptmin; pt <= ptmax; pt += Par.pt_step)
+	for (int i = 0; i < Par.ntries; i++)
 	{
-		for (double y1 = -Par.abs_max_y; y1 <= Par.abs_max_y; y1 += Par.y1_step)
+		(void)i;
+		const double pt = Par.rand.Uniform(Par.ptmin, ptmax);
+		const double y1 = Par.rand.Uniform(0., Par.abs_max_y);
+		
+		double y2 = y1 - delta_y;
+		
+		//keeps track if the try was kinematicaly possible
+		bool success = false;
+		if (y2 < Par.abs_max_y)
 		{
-			double y2 = y1 - delta_y;
-			if (abs(y2) <= Par.abs_max_y) 
+			const double x1 = X1(pt, Par.energy, y1, y2);
+			const double x2 = X2(pt, Par.energy, y1, y2);
+							
+			if (x1 < 1. && x2 < 1.)
 			{
-				const double x1 = X1(pt, Par.energy, y1, y2);
-				const double x2 = X2(pt, Par.energy, y1, y2);
-					
-				if (x1 < 1. && x2 < 1.)
-				{
-					int_result += DsigmaDpTDy1Dy2(pt, Par.s*x1*x2, y1, y2, x1, x2);
-					abs_y_range = Maximum(abs(y1), abs(y2), abs_y_range);
-
-					current_ptmin = Minimum(current_ptmin, pt);
-					current_ptmax = Maximum(current_ptmax, pt);
-				}
-			}
-			
-			//switching y2 since it can have 2 different values
-			y2 = delta_y + y1;
-			if (abs(y2) <= Par.abs_max_y)
-			{
-				const double x1 = X1(pt, Par.energy, y1, y2);
-				const double x2 = X2(pt, Par.energy, y1, y2);
-				
-				if (x1 < 1. && x2 < 1.)
-				{
-					int_result += DsigmaDpTDy1Dy2(pt, Par.s*x1*x2, y1, y2, x1, x2);
-					abs_y_range = Maximum(abs(y1), abs(y2), abs_y_range);
-
-					current_ptmin = Minimum(current_ptmin, pt);
-					current_ptmax = Maximum(current_ptmax, pt);
-				}
+				result += DsigmaDpTDy1Dy2(pt, Par.s*x1*x2, y1, y2, x1, x2);
+				success = true;
 			}
 		}
+		y2 = delta_y + y1;
+		if (abs(y2) <= Par.abs_max_y)
+		{
+			const double x1 = X1(pt, Par.energy, y1, y2);
+			const double x2 = X2(pt, Par.energy, y1, y2);
+				
+			if (x1 < 1. && x2 < 1.)
+			{
+				result += DsigmaDpTDy1Dy2(pt, Par.s*x1*x2, y1, y2, x1, x2);
+				success = true;
+			}
+		}
+		if (success) n += 1.;
 	}
-	int_result *= 4.*abs_y_range*abs_y_range*(current_ptmax - current_ptmin)/(4.*Par.nsteps*(ptmax - Par.ptmin)/Par.pt_step);
-	return int_result;
+	if (n < 1.) return 0.;
+	return result*(ptmax - Par.ptmin)/n;
 }
 
 int main()
 {
+	Par.rand.SetSeed(GetRandomSeed());
 	TH1D dsigma_dpt = TH1D("dsigma_dpt", "dsigma/dpT", 200, 0, 200);
-	TH1D dsigma_ddy = TH1D("dsigma_ddy", "dsigma/dDeltay", 120, 0, 
+	TH1D dsigma_ddy = TH1D("dsigma_ddy", "dsigma/dDeltay", 200, 0, 
 		static_cast<double>(ceil(Par.abs_max_y*2)));
-
+	
 	ProgressBar pbar = ProgressBar("FANCY");
 	pbar.SetText("dsigma/dpT");
 	
